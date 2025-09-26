@@ -1,0 +1,81 @@
+@font-face {
+  font-family: "Poppins-Bold";
+  src: url("../../Font/Poppins-Bold.ttf");
+}
+@font-face {
+  font-family: "Poppins-Medium";
+  src: url("../../Font/Poppins-Medium.ttf");
+}
+@font-face {
+  font-family: "Poppins-Regular";
+  src: url("../../Font/Poppins-Regular.ttf");
+}
+@font-face {
+  font-family: "Poppins-SemiBold";
+  src: url("../../Font/Poppins-SemiBold.ttf");
+}
+@font-face {
+  font-family: "Poppins-Light";
+  src: url("../../Font/Poppins-Light.ttf");
+}
+.navbarSearch {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: calc(100% - 250px);
+  margin-left: 250px;
+  padding: 20px 32px 20px 38px;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 0.5px solid #848fa1;
+  .searchBox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid #d3d7de;
+    border-radius: 8px;
+    background-color: #fff;
+    min-width: 250px;
+
+    .icon {
+      font-size: 16px;
+      color: #a0a0a0;
+    }
+
+    input {
+      border: none;
+      outline: none;
+      flex: 1;
+      font-size: 14px;
+      color: #333;
+      background: transparent;
+      font-family: "Poppins-Light";
+
+      &::placeholder {
+        color: #a0a0a0;
+      }
+    }
+  }
+
+  .notification {
+    position: relative;
+    cursor: pointer;
+
+    .bell {
+      font-size: 22px;
+      color: #606060;
+    }
+
+    .badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 8px;
+      height: 8px;
+      background: #e53935;
+      border-radius: 50%;
+    }
+  }
+}

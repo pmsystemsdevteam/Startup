@@ -1,0 +1,165 @@
+$bg: #f6f8fb;
+$card-bg: #ffffff;
+$primary: #324462;
+$text: #0f172a;
+$muted: #667085;
+$radius-lg: 24px;
+$radius-md: 14px;
+
+@font-face {
+  font-family: "Poppins-Bold";
+  src: url("../../Font/Poppins-Bold.ttf");
+}
+@font-face {
+  font-family: "Poppins-Medium";
+  src: url("../../Font/Poppins-Medium.ttf");
+}
+@font-face {
+  font-family: "Poppins-Regular";
+  src: url("../../Font/Poppins-Regular.ttf");
+}
+@font-face {
+  font-family: "Poppins-SemiBold";
+  src: url("../../Font/Poppins-SemiBold.ttf");
+}
+@font-face {
+  font-family: "Poppins-Light";
+  src: url("../../Font/Poppins-Light.ttf");
+}
+
+#login {
+  min-height: 100vh;
+  display: flex;
+  gap: 28px;
+  padding: 32px;
+  background: $bg;
+  z-index: 10;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 20px;
+  }
+}
+
+.auth-card {
+  border-radius: $radius-md;
+  padding: 28px;
+  width: 500px;
+  align-self: center;
+  h1 {
+    font-family: "Poppins-Regular";
+    align-self: stretch;
+    color: #000;
+    text-align: center;
+    font-size: 24px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 20px;
+  }
+
+  .form {
+    display: grid;
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .field {
+    display: grid;
+    gap: 8px;
+
+    label {
+      font-family: "Radio Canada";
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: 20px; /* 125% */
+      font-family: "Poppins-Light";
+      color: #9e9d9d;
+      font-weight: 600;
+    }
+
+    input {
+      display: flex;
+      width: 100%;
+
+      padding: 16px 12px 16px 16px;
+      align-items: center;
+      gap: 12px;
+      border-radius: 8px;
+      border: 1px solid #9e9d9d;
+      font-family: "Poppins-Light";
+      outline: none;
+      height: 52px;
+      &::placeholder {
+        color: #9e9d9d;
+      }
+      &:focus {
+        border-color: $primary;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05),
+          0 0 0 4px rgba(47, 109, 246, 0.1);
+      }
+    }
+
+    .password {
+      position: relative;
+      .toggle {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 30px;
+        width: 34px;
+        border: 0;
+        background: transparent;
+        color: #5b6b7a;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+
+        svg {
+          width: 20px;
+          height: 20px;
+        }
+      }
+    }
+  }
+
+  .submit {
+    margin-top: 6px;
+    height: 44px;
+    border-radius: 10px;
+    border: none;
+    background: $primary;
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.05s ease, filter 0.2s ease;
+    height: 52px;
+    font-family: "Poppins-Light";
+    letter-spacing: 1px;
+    &:hover {
+      filter: brightness(1.03);
+    }
+    &:active {
+      transform: translateY(1px);
+    }
+  }
+}
+
+.brand-panel {
+  background: red;
+  width: 70%;
+  height: 90vh;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  img {
+    max-width: 300px;
+  }
+}
