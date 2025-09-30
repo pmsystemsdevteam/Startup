@@ -172,7 +172,7 @@ function PermissionDetail({ multiple = true, onSelect }) {
         </div>
       </div>
       <div className="summaryBox">
-        <h2>Təsdiqləyəcək şəxslər</h2>
+        <h2>Təsdiq edəcək şəxslər</h2>
         <div className="info">
           <div className="little">
             <p>Ad, soyad:</p>
@@ -227,7 +227,7 @@ function PermissionDetail({ multiple = true, onSelect }) {
             <p>{data?.user?.department}</p>
           </div>
           <div className="little">
-            <p>Təsdiqləyəcək şəxslər:</p>
+            <p>Təsdiq edəcək şəxslər:</p>
             <p style={{ fontWeight: "bold" }}>
               {data?.accept_person
                 ?.map((p) => `${p.first_name} ${p.last_name}`)

@@ -465,7 +465,7 @@ const handleSubmit = async () => {
       </div>
 
       <div className="documentSend">
-        <h2>Əlaqəli sənədlər</h2>
+        <h2>Qoşma sənədlər</h2>
         <div className="doxBox">
           <div className="icon">
             <BsDownload />
@@ -501,7 +501,7 @@ const handleSubmit = async () => {
       </div>
 
       <div className="confirmBox">
-        <h2>Təsdiqləyəcək şəxslər</h2>
+        <h2>Təsdiq edəcək şəxslər</h2>
         <div className="chosenPerson" onClick={() => toggle("timer")}>
           <label>Təsdiq</label>
           <div className="icon">
@@ -512,7 +512,7 @@ const handleSubmit = async () => {
             {selectedPeople
               ? selectedPeople
               : people.length > 0
-              ? "Təsdiqləyici şəxsi seçin"
+              ? "Təsdiq edəcək şəxsi seçin"
               : "Uyğun təsdiqləyici yoxdur"}
           </p>
 
@@ -548,7 +548,7 @@ const handleSubmit = async () => {
       </div>
 
       <div className="summaryBox">
-        <h2>Təsdiqləyəcək şəxslər</h2>
+        <h2>Ərizənin xülasəsi</h2>
         <div className="info">
           <div className="little">
             <p>Ad, soyad:</p>
@@ -618,7 +618,7 @@ const handleSubmit = async () => {
           </div>
 
           <div className="little">
-            <p>Təsdiqləyəcək şəxslər:</p>
+            <p>Təsdiq edəcək şəxslər:</p>
             <p style={{ fontWeight: "bold" }}>
               {people.filter((p) => p.tick).length > 0
                 ? people
