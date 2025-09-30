@@ -450,7 +450,7 @@
         border: 1px solid #b1b5c3;
         left: 0px;
         cursor: context-menu;
-        height: 240px;
+        max-height: 240px;
         overflow-y: auto;
         border-radius: 0px 0px 10px 10px;
         .littleBox {

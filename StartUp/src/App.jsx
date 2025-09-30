@@ -81,8 +81,9 @@ export default function App() {
           {/* HR */}
           <Route path="/hr/permission-info" element={<HrPage />} />
           <Route path="/hr/permission-history" element={<HrSchedule />} />
+          <Route path="/hr/permission-history-detail/:id" element={<PermissionDetail />} />
           <Route
-            path="/hr/permission-info-detail"
+            path="/hr/permission-info-detail/:id"
             element={<PermissionDetail />}
           />
 

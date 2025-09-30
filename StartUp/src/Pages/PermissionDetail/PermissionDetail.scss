@@ -309,7 +309,7 @@
           font-weight: 600;
           line-height: 100%; /* 16px */
         }
-        button {
+        .button {
           margin-top: 6px;
           display: flex;
           width: 80px;
@@ -322,6 +322,7 @@
           color: #fff;
           border: none;
           font-family: "Poppins-Light";
+          text-decoration: none;
           cursor: pointer;
           .ico {
             display: flex;

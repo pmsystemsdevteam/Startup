@@ -1,128 +1,181 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./LeadPage.scss";
 import { IoArrowBackSharp, IoArrowForwardSharp } from "react-icons/io5";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { IoMdCheckmark } from "react-icons/io";
-import { IoCheckmark } from "react-icons/io5";
+import axios from "axios";
+import dayjs from "dayjs";
 
-function LeadPage() {
-  // --- INIT DATA ---
-  const initialData = [
-    {
-      ad: "Əli İsmail",
-      nov: "Məzuniyyət",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "Front-end Developer",
-      qaligGun: 23,
-      muddet: "19.05.2025\n11.06.2025",
-      sebeb: "-------",
-      status: "Gözləmədə",
-    },
-    {
-      ad: "Aytac Məhərrəmova",
-      nov: "Xəstəlik",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "UX/UI Dizayner",
-      qaligGun: 12,
-      muddet: "19.05.2025 (10:00–12:00)",
-      sebeb: "Bu həftə task çox olduğuna görə",
-      status: "Rədd edildi",
-    },
-    {
-      ad: "Ferhad Sultanov",
-      nov: "Məcburi səbəb",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "Front-end Developer",
-      qaligGun: 14,
-      muddet: "19.05.2025 (10:00–12:00)",
-      sebeb: "Ferhad bəy məzuniyyətdədir.",
-      status: "Rədd edildi",
-    },
-    {
-      ad: "Rəşad Səmədli",
-      nov: "Digər",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "UX/UI Dizayner",
-      qaligGun: 30,
-      muddet: "19.05.2025\n11.06.2025",
-      sebeb: "-------",
-      status: "Gözləmədə",
-    },
-    {
-      ad: "Həsən Rzayev",
-      nov: "Məzuniyyət",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "Back-end Developer",
-      qaligGun: 10,
-      muddet: "19.05.2025 (10:00–12:00)",
-      sebeb: "Aytac xanım əvəzlənməlidir.",
-      status: "Rədd edildi",
-    },
-    {
-      ad: "Həsən Rzayev",
-      nov: "Məzuniyyət",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "Back-end Developer",
-      qaligGun: 10,
-      muddet: "19.05.2025  11.06.2025",
-      sebeb: "-------",
-      status: "Təsdiq",
-    },
-  ];
-
-  // --- STATE ---
-  const [rows, setRows] = useState(initialData);
-
-  // Pagination
+function LeadSchedule() {
+  const [data, setData] = useState([]);
+  const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 6;
-  const totalPages = Math.ceil(rows.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const currentData = rows.slice(startIndex, startIndex + rowsPerPage);
+  const [openMenu, setOpenMenu] = useState(null);
 
-  // Popup (yalnız rədd üçün)
+  const rowsPerPage = 6;
+
+  // ✅ Popup state
   const [popup, setPopup] = useState(null); // null | "reject"
   const [rejectReason, setRejectReason] = useState("");
   const [selectedRowAbsIndex, setSelectedRowAbsIndex] = useState(null);
 
-  // Column filter menuları
-  const [openMenu, setOpenMenu] = useState(null);
+  // ✅ forms API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await axios.get("http://172.20.5.167:8000/api/hr/forms/", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        });
+        setData(res.data);
+      } catch (error) {
+        console.error("Forms fetch error:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // ✅ users API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await axios.get("http://172.20.5.167:8000/api/users/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUsers(res.data);
+      } catch (err) {
+        console.error("Users fetch error:", err);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  // Users-i qruplaşdırırıq (A-Z)
+  const groupedUsers = users.reduce((acc, user) => {
+    const fullName = `${user.first_name} ${user.last_name}`;
+    const firstLetter = fullName.charAt(0).toUpperCase();
+
+    if (!acc[firstLetter]) acc[firstLetter] = [];
+    acc[firstLetter].push({ id: user.id, info: fullName });
+
+    return acc;
+  }, {});
+
+  const name = Object.keys(groupedUsers)
+    .sort()
+    .map((letter) => ({
+      letter,
+      names: groupedUsers[letter],
+    }));
+
+  // ✅ Filtrlər
+  const [filters, setFilters] = useState({
+    fullName: null,
+    documentType: null,
+    department: null,
+    jobname: null,
+    status: null,
+  });
+
+  const handleFilterClick = (key, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: prev[key] === value ? null : value,
+    }));
+    setOpenMenu(null);
+  };
+
+  // ✅ Filter olunmuş data
+  const filteredData = data.filter((row) => {
+    let matches = true;
+
+    const fullName = `${row.user?.first_name || ""} ${
+      row.user?.last_name || ""
+    }`;
+
+    if (filters.fullName && fullName !== filters.fullName) matches = false;
+    if (filters.documentType && row.documentType !== filters.documentType)
+      matches = false;
+    if (filters.department && row.user?.department !== filters.department)
+      matches = false;
+    if (filters.jobname && row.user?.jobname !== filters.jobname)
+      matches = false;
+    if (filters.status && row.status !== filters.status) matches = false;
+
+    return matches;
+  });
+
+  // ✅ Pagination filteredData ilə
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const currentData = filteredData.slice(startIndex, startIndex + rowsPerPage);
+
   const toggleMenu = (menu) => {
     setOpenMenu(openMenu === menu ? null : menu);
   };
-  const [selectedItems, setSelectedItems] = useState({});
-  const handleItemClick = (id) => {
-    setSelectedItems((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case "approved":
+      case "Təsdiq":
+        return "status approved";
+      case "rejected":
+      case "Rədd edildi":
+        return "status rejected";
+      default:
+        return "status pending";
+    }
   };
 
-  // Status dropdown
+  // --- NEW: Status dəyişmə ---
   const [openStatusDropdown, setOpenStatusDropdown] = useState(null);
   const toggleStatusDropdown = (index) => {
     setOpenStatusDropdown(openStatusDropdown === index ? null : index);
   };
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "Təsdiq":
-        return "status approved";
-      case "Rədd edildi":
-        return "status rejected";
-      case "Gözləmədə":
-        return "status pending";
-      default:
-        return "status";
+  const getOtherStatuses = (currentStatus) => {
+    const allStatuses = ["approved", "rejected", "pending"];
+    return allStatuses.filter((st) => st !== currentStatus);
+  };
+
+  const handleStatusSelect = (absIndex, status) => {
+    if (status === "rejected") {
+      setSelectedRowAbsIndex(absIndex);
+      setRejectReason("");
+      setPopup("reject");
+    } else {
+      // Update immediately
+      setData((prev) => {
+        const next = [...prev];
+        next[absIndex] = {
+          ...next[absIndex],
+          status,
+          description: next[absIndex].description || "-------",
+        };
+        return next;
+      });
+      setOpenStatusDropdown(null);
     }
   };
 
-  const getOtherStatuses = (currentStatus) => {
-    const allStatuses = ["Təsdiq", "Rədd edildi", "Gözləmədə"];
-    return allStatuses.filter((status) => status !== currentStatus);
+  const submitRejection = () => {
+    if (selectedRowAbsIndex == null) return;
+    setData((prev) => {
+      const next = [...prev];
+      next[selectedRowAbsIndex] = {
+        ...next[selectedRowAbsIndex],
+        status: "rejected",
+        description: rejectReason?.trim() ? rejectReason.trim() : "-------",
+      };
+      return next;
+    });
+    setPopup(null);
+    setRejectReason("");
+    setSelectedRowAbsIndex(null);
+    setOpenStatusDropdown(null);
   };
 
   const goToPage = (page) => {
@@ -157,44 +210,9 @@ function LeadPage() {
     return pages;
   };
 
-  // --- NEW: Status seçimi handleri ---
-  const handleStatusSelect = (absIndex, status) => {
-    if (status === "Rədd edildi") {
-      setSelectedRowAbsIndex(absIndex);
-      setRejectReason("");
-      setPopup("reject");
-    } else {
-      // Rədd deyil → dərhal statusu dəyiş
-      setRows((prev) => {
-        const next = [...prev];
-        next[absIndex] = { ...next[absIndex], status, sebeb: next[absIndex].sebeb || "-------" };
-        return next;
-      });
-      setOpenStatusDropdown(null);
-    }
-  };
-
-  // Popup göndər
-  const submitRejection = () => {
-    if (selectedRowAbsIndex == null) return;
-    setRows((prev) => {
-      const next = [...prev];
-      next[selectedRowAbsIndex] = {
-        ...next[selectedRowAbsIndex],
-        status: "Rədd edildi",
-        sebeb: rejectReason?.trim() ? rejectReason.trim() : "-------",
-      };
-      return next;
-    });
-    setPopup(null);
-    setRejectReason("");
-    setSelectedRowAbsIndex(null);
-    setOpenStatusDropdown(null);
-  };
-
   return (
     <div className="leadPage">
-      {/* Popup */}
+      {/* ✅ Popup */}
       <div
         className={`popUp ${popup === "reject" ? "open" : ""}`}
         onClick={() => setPopup(null)}
@@ -218,16 +236,65 @@ function LeadPage() {
         <thead>
           <tr>
             <th>
+              {" "}
               <div className="menu" onClick={() => toggleMenu("ad")}>
-                Ad Soyad{" "}
+                Ad Soyad
                 <div className="icon">
                   <MdKeyboardArrowDown />
                 </div>
+                {openMenu === "ad" && (
+                  <div className="submenu">
+                    {name.map((group) => (
+                      <div key={group.letter}>
+                        <div
+                          className="group-header"
+                          style={{
+                            width: "10px",
+                            fontWeight: 600,
+                            color: "#b1b5c3",
+                            margin: "5px 0",
+                            borderRadius: "4px",
+                          }}
+                        >
+                          {group.letter}
+                        </div>
+                        <ul>
+                          {group.names.map((item) => (
+                            <li
+                              key={item.id}
+                              className={
+                                filters.fullName === item.info ? "onclick" : ""
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFilterClick("fullName", item.info);
+                              }}
+                            >
+                              <p>{item.info}</p>
+                              <div
+                                className={`square ${
+                                  filters.fullName === item.info
+                                    ? "onclickBox"
+                                    : ""
+                                }`}
+                              >
+                                {filters.fullName === item.info && (
+                                  <IoMdCheckmark />
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </th>
             <th>
+              {" "}
               <div className="menu" onClick={() => toggleMenu("nov")}>
-                Ərizə növü{" "}
+                Ərizə növü
                 <div className="icon">
                   <MdKeyboardArrowDown />
                 </div>
@@ -235,26 +302,28 @@ function LeadPage() {
                   <div className="submenu">
                     <ul>
                       {[
-                        { id: 1, name: "Məzuniyyət" },
-                        { id: 2, name: "Xəstəlik" },
-                        { id: 3, name: "Ezamiyyət" },
-                        { id: 4, name: "Məcburi səbəb" },
-                      ].map((item) => (
+                        "Məzuniyyət",
+                        "Xəstəlik",
+                        "Ezamiyyət",
+                        "Məcburi səbəb",
+                      ].map((type, idx) => (
                         <li
-                          key={item.id}
-                          className={selectedItems[item.id] ? "onclick" : ""}
+                          key={idx}
+                          className={
+                            filters.documentType === type ? "onclick" : ""
+                          }
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleItemClick(item.id);
+                            handleFilterClick("documentType", type);
                           }}
                         >
-                          <p>{item.name}</p>
+                          <p>{type}</p>
                           <div
                             className={`square ${
-                              selectedItems[item.id] ? "onclickBox" : ""
+                              filters.documentType === type ? "onclickBox" : ""
                             }`}
                           >
-                            {selectedItems[item.id] && <IoMdCheckmark />}
+                            {filters.documentType === type && <IoMdCheckmark />}
                           </div>
                         </li>
                       ))}
@@ -266,33 +335,33 @@ function LeadPage() {
             <th>Sənəd nömrəsi</th>
             <th>
               <div className="menu" onClick={() => toggleMenu("soba")}>
-                Şöbə{" "}
+                Şöbə
                 <div className="icon">
                   <MdKeyboardArrowDown />
                 </div>
                 {openMenu === "soba" && (
                   <div className="submenu">
                     <ul>
-                      {[
-                        { id: 5, name: "İT Dev Team" },
-                        { id: 6, name: "HR" },
-                        { id: 7, name: "Maliyyə" },
-                      ].map((item) => (
+                      {Array.from(
+                        new Set(data.map((r) => r.user?.department))
+                      ).map((dep, idx) => (
                         <li
-                          key={item.id}
-                          className={selectedItems[item.id] ? "onclick" : ""}
+                          key={idx}
+                          className={
+                            filters.department === dep ? "onclick" : ""
+                          }
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleItemClick(item.id);
+                            handleFilterClick("department", dep);
                           }}
                         >
-                          <p>{item.name}</p>
+                          <p>{dep}</p>
                           <div
                             className={`square ${
-                              selectedItems[item.id] ? "onclickBox" : ""
+                              filters.department === dep ? "onclickBox" : ""
                             }`}
                           >
-                            {selectedItems[item.id] && <IoMdCheckmark />}
+                            {filters.department === dep && <IoMdCheckmark />}
                           </div>
                         </li>
                       ))}
@@ -302,34 +371,33 @@ function LeadPage() {
               </div>
             </th>
             <th>
+              {" "}
               <div className="menu" onClick={() => toggleMenu("vezife")}>
-                Vəzifə{" "}
+                Vəzifə
                 <div className="icon">
                   <MdKeyboardArrowDown />
                 </div>
                 {openMenu === "vezife" && (
                   <div className="submenu">
                     <ul>
-                      {[
-                        { id: 9, name: "Front-end Developer" },
-                        { id: 10, name: "Back-end Developer" },
-                        { id: 11, name: "UX/UI Dizayner" },
-                      ].map((item) => (
+                      {Array.from(
+                        new Set(data.map((r) => r.user?.jobname))
+                      ).map((job, idx) => (
                         <li
-                          key={item.id}
-                          className={selectedItems[item.id] ? "onclick" : ""}
+                          key={idx}
+                          className={filters.jobname === job ? "onclick" : ""}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleItemClick(item.id);
+                            handleFilterClick("jobname", job);
                           }}
                         >
-                          <p>{item.name}</p>
+                          <p>{job}</p>
                           <div
                             className={`square ${
-                              selectedItems[item.id] ? "onclickBox" : ""
+                              filters.jobname === job ? "onclickBox" : ""
                             }`}
                           >
-                            {selectedItems[item.id] && <IoMdCheckmark />}
+                            {filters.jobname === job && <IoMdCheckmark />}
                           </div>
                         </li>
                       ))}
@@ -341,43 +409,7 @@ function LeadPage() {
             <th>Qalıq icazə günü</th>
             <th>İcazə müddəti</th>
             <th>Rədd səbəbi</th>
-            <th>
-              <div className="menu" onClick={() => toggleMenu("status")}>
-                Status{" "}
-                <div className="icon">
-                  <MdKeyboardArrowDown />
-                </div>
-                {openMenu === "status" && (
-                  <div className="submenu">
-                    <ul>
-                      {[
-                        { id: 101, name: "Təsdiq" },
-                        { id: 102, name: "Rədd edildi" },
-                        { id: 103, name: "Gözləmədə" },
-                      ].map((item) => (
-                        <li
-                          key={item.id}
-                          className={selectedItems[item.id] ? "onclick" : ""}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleItemClick(item.id);
-                          }}
-                        >
-                          <p>{item.name}</p>
-                          <div
-                            className={`square ${
-                              selectedItems[item.id] ? "onclickBox" : ""
-                            }`}
-                          >
-                            {selectedItems[item.id] && <IoMdCheckmark />}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </th>
+            <th>Status</th>
           </tr>
         </thead>
 
@@ -386,39 +418,40 @@ function LeadPage() {
             const absIndex = startIndex + i;
             return (
               <tr key={absIndex}>
-                <td>{row.ad}</td>
-                <td>{row.nov}</td>
-                <td>{row.sened}</td>
-                <td>{row.soba}</td>
-                <td>{row.vezife}</td>
-                <td>{row.qaligGun}</td>
                 <td>
-                  {row.muddet.split("\n").map((line, idx) => (
-                    <div className="time" key={idx}>
-                      <p>{line}</p>
-                    </div>
-                  ))}
+                  {row?.user?.first_name} {row?.user?.last_name}
                 </td>
+                <td>{row?.documentType || "--"}</td>
+                <td>{row?.document_number || "--"}</td>
+                <td>{row?.user?.department || "--"}</td>
+                <td>{row?.user?.jobname || "--"}</td>
+                <td>{row?.user?.permission_day || "--"}</td>
                 <td>
-                  <div
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <p style={{ width: "130px" }}>{row.sebeb}</p>
+                  <div>
+                    {row?.date_start &&
+                      dayjs(row.date_start).format("DD.MM.YYYY")}{" "}
+                    -{" "}
+                    {row?.date_end && dayjs(row.date_end).format("DD.MM.YYYY")}
                   </div>
+                  {row?.time_start && row?.time_end && (
+                    <div>
+                      ({row.time_start.slice(0, 5)} – {row.time_end.slice(0, 5)}
+                      )
+                    </div>
+                  )}
                 </td>
-
+                <td>{row?.description || "--"}</td>
                 <td>
                   <div className="statusBox">
                     <span
                       className={getStatusClass(row.status)}
                       onClick={() => toggleStatusDropdown(absIndex)}
                     >
-                      {row.status}
+                      {row?.status === "approved"
+                        ? "Təsdiq"
+                        : row?.status === "rejected"
+                        ? "Rədd"
+                        : "Gözləmə"}
                       <div className="icon">
                         <MdKeyboardArrowDown />
                       </div>
@@ -435,7 +468,11 @@ function LeadPage() {
                             className={getStatusClass(status)}
                             onClick={() => handleStatusSelect(absIndex, status)}
                           >
-                            {status}
+                            {status === "approved"
+                              ? "Təsdiq"
+                              : status === "rejected"
+                              ? "Rədd"
+                              : "Gözləmə"}
                           </span>
                         ))}
                       </div>
@@ -469,4 +506,4 @@ function LeadPage() {
   );
 }
 
-export default LeadPage;
+export default LeadSchedule;

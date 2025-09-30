@@ -75,6 +75,7 @@ function StaffPage({ multiple = true, onSelect }) {
   const [dailyStart, setDailyStart] = useState("");
   const [dailyEnd, setDailyEnd] = useState("");
   const [people, setPeople] = useState([]);
+  const [description, setDescription] = useState("");
 
   async function fetchApprovers(companyId) {
     try {
@@ -150,6 +151,67 @@ function StaffPage({ multiple = true, onSelect }) {
     setOpen((p) => ({ ...p, type: false }));
   };
 
+const handleSubmit = async () => {
+  try {
+    const formData = new FormData();
+
+    formData.append("documentType", selectedType || "");
+    formData.append("time_start", startTime || "");
+    formData.append("time_end", endTime || "");
+    formData.append(
+      "date_start",
+      dailyStart ? dailyStart.split(".").reverse().join("-") : ""
+    );
+    formData.append(
+      "date_end",
+      dailyEnd ? dailyEnd.split(".").reverse().join("-") : ""
+    );
+    formData.append("start_job_date", date ? date.format("YYYY-MM-DD") : "");
+    formData.append(
+      "calendar_count",
+      dailyStart && dailyEnd
+        ? Math.ceil(
+            (new Date(dailyEnd.split(".").reverse().join("-")) -
+              new Date(dailyStart.split(".").reverse().join("-"))) /
+              (1000 * 60 * 60 * 24)
+          )
+        : 0
+    );
+    formData.append("document_number", "444");
+    formData.append("description", description || "");
+
+    // ✅ accept_person düzəldildi
+    const selectedIds = people.filter((p) => p.tick).map((p) => p.id);
+    selectedIds.forEach((id) => {
+  formData.append("accept_person", id);  // 🔥 dəyişiklik burada
+});
+
+
+    // ✅ Fayllar
+    files.forEach((file) => {
+      formData.append("document", file);
+    });
+
+    const res = await axios.post(`${BaseUrl}/api/hr/forms/`, formData, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    console.log("Form saved:", res.data);
+    setPopup("approve");
+    setTimeout(() => {
+      navigate("/staff/permission-history");
+    }, 2000);
+  } catch (err) {
+    console.error("Form submit error:", err.response?.data || err);
+    setPopup("cancel");
+  }
+};
+
+
+
   if (loading) return <p>Yüklənir...</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
@@ -224,7 +286,11 @@ function StaffPage({ multiple = true, onSelect }) {
       <div className="allowInfo">
         <h2>Ərizə məlumatı:</h2>
         <form>
-          <div className="box1 hasSubmenu" onClick={() => toggle("type")}>
+          <div
+            className="box1 hasSubmenu"
+            style={{ cursor: "pointer" }}
+            onClick={() => toggle("type")}
+          >
             <label>Ərizə növü</label>
             <div className={`icon ${open.type ? "" : "active"}`}>
               <MdOutlineKeyboardArrowDown />
@@ -255,8 +321,15 @@ function StaffPage({ multiple = true, onSelect }) {
               </ul>
             </div>
           </div>
-
-          <div className="box2 hasSubmenu" onClick={() => toggle("hourly")}>
+          <div className="box2">
+            <label>Sənəd nömrəsi</label>
+            <p>{userData?.documents?.[0]?.doc_num || "—"}</p>
+          </div>
+          <div
+            className="box3 hasSubmenu"
+            style={{ cursor: "pointer" }}
+            onClick={() => toggle("hourly")}
+          >
             <label>Saatlıq</label>
             <div
               className={`icon ${open.hourly ? "" : "active"}`}
@@ -295,7 +368,11 @@ function StaffPage({ multiple = true, onSelect }) {
             </div>
           </div>
 
-          <div className="box3 hasSubmenu" onClick={() => toggle("daily")}>
+          <div
+            className="box4 hasSubmenu"
+            style={{ cursor: "pointer" }}
+            onClick={() => toggle("daily")}
+          >
             <label>Günlük və aylıq</label>
             <div
               className={`icon ${open.daily ? "" : "active"}`}
@@ -334,7 +411,7 @@ function StaffPage({ multiple = true, onSelect }) {
             </div>
           </div>
 
-          <div className="box4">
+          <div className="box5">
             <label>İşə çıxma tarixi</label>
             <div
               className="icon"
@@ -363,7 +440,7 @@ function StaffPage({ multiple = true, onSelect }) {
             <p>{date ? date.format("DD.MM.YYYY") : "—"}</p>
           </div>
 
-          <div className="box5">
+          <div className="box">
             <label>Təqvim günü sayı</label>
             <p>
               {dailyStart && dailyEnd
@@ -375,16 +452,13 @@ function StaffPage({ multiple = true, onSelect }) {
                 : ""}
             </p>
           </div>
-          <div className="box">
-            <label>Sənəd nömrəsi</label>
-            <p>{userData?.documents?.[0]?.doc_num || "—"}</p>
-          </div>
 
           <div className="box6">
             <label>Açıqlama</label>
             <textarea
               placeholder="İcazə səbəbi və əlavə məlumatlar....."
-              defaultValue={userData?.documents?.[0]?.description || ""}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             ></textarea>
           </div>
         </form>
@@ -520,7 +594,7 @@ function StaffPage({ multiple = true, onSelect }) {
           </div>
           <div className="little">
             <p>Sənəd nömrəsi:</p>
-            <p>{userData?.documents?.[0]?.doc_num || "—"}</p>
+            <p>{userData?.document || "—"}</p>
           </div>
           <div className="little">
             <p>Şöbə:</p>
@@ -561,8 +635,8 @@ function StaffPage({ multiple = true, onSelect }) {
             <div className="button" onClick={() => setPopup("cancel")}>
               Sil
             </div>
-            <div className="button" onClick={() => setPopup("approve")}>
-              Təsdiqlə
+            <div className="button" onClick={handleSubmit}>
+              Göndər
             </div>
           </div>
           <div className="copy">

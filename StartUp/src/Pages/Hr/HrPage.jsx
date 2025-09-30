@@ -1,123 +1,66 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./HrPage.scss";
 import { IoArrowBackSharp, IoArrowForwardSharp } from "react-icons/io5";
 import { IoIosArrowRoundUp } from "react-icons/io";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { IoMdCheckmark } from "react-icons/io";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import dayjs from "dayjs";
 
 function HrPage() {
-  const data = [
-    {
-      ad: "Əli İsmail",
-      nov: "Məzuniyyət",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "Front-end Developer",
-      qaligGun: 23,
-      muddet: "19.05.2025\n11.06.2025",
-      sebeb: "-------",
-      status: "Gözləmədə",
-    },
-    {
-      ad: "Aytac Məhərrəmova",
-      nov: "Xəstəlik",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "UX/UI Dizayner",
-      qaligGun: 12,
-      muddet: "19.05.2025 (10:00–12:00)",
-      sebeb: "Bu həftə task çox olduğuna görə",
-      status: "Rədd edildi",
-    },
-    {
-      ad: "Ferhad Sultanov",
-      nov: "Məcburi səbəb",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "Front-end Developer",
-      qaligGun: 14,
-      muddet: "19.05.2025 (10:00–12:00)",
-      sebeb: "Ferhad bəy məzuniyyətdədir.",
-      status: "Rədd edildi",
-    },
-    {
-      ad: "Rəşad Səmədli",
-      nov: "Digər",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "UX/UI Dizayner",
-      qaligGun: 30,
-      muddet: "19.05.2025\n11.06.2025",
-      sebeb: "-------",
-      status: "Gözləmədə",
-    },
-    {
-      ad: "Həsən Rzayev",
-      nov: "Məzuniyyət",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "Back-end Developer",
-      qaligGun: 10,
-      muddet: "19.05.2025 (10:00–12:00)",
-      sebeb: "Aytac xanım əvəzlənməlidir.",
-      status: "Rədd edildi",
-    },
-    {
-      ad: "Həsən Rzayev",
-      nov: "Məzuniyyət",
-      sened: "1234A56",
-      soba: "İT Dev Team",
-      vezife: "Back-end Developer",
-      qaligGun: 10,
-      muddet: "19.05.2025  11.06.2025",
-      sebeb: "-------",
-      status: "Təsdiq",
-    },
-  ];
-
-  const name = [
-    {
-      letter: "A",
-      names: [
-        { id: 1, info: "Aysu Eliyeva" },
-        { id: 2, info: "Aylin Meherremova" },
-        { id: 3, info: "Aytac Məhərrəmova" },
-      ],
-    },
-    {
-      letter: "B",
-      names: [
-        { id: 4, info: "Babek Abbasov" },
-        { id: 5, info: "Baxşeli Semedov" },
-        { id: 6, info: "Beyrek Memmedli" },
-      ],
-    },
-    {
-      letter: "C",
-      names: [
-        { id: 7, info: "Cümşüd Asifov" },
-        { id: 8, info: "Cemile Selimova" },
-      ],
-    },
-  ];
-
-  // Pagination
+  const [data, setData] = useState([]);
+  const [openMenu, setOpenMenu] = useState(null);
+  const [selectedItems, setSelectedItems] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 6;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const userId = localStorage.getItem("user_id");
+
+        if (!token || !userId) {
+          console.warn("Token və ya user_id tapılmadı!");
+          return;
+        }
+
+        // 🔹 Əvvəl user-in məlumatını çəkirik
+        const userRes = await axios.get(
+          `http://172.20.5.167:8000/api/users/${userId}/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const userCompany = userRes.data.company.companyName;
+
+        // 🔹 Formları çəkirik
+        const res = await axios.get("http://172.20.5.167:8000/api/hr/forms/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // 🔹 Yalnız həmin company-də olan user-lərin formaları qalsın
+        const filtered = res.data.filter(
+          (form) => form.user && form.user.company.companyName === userCompany
+        );
+
+        setData(filtered);
+      } catch (err) {
+        console.error("Error fetching HR forms:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const totalPages = Math.ceil(data.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentData = data.slice(startIndex, startIndex + rowsPerPage);
 
-  // Submenu açılıb/bağlanma state
-  const [openMenu, setOpenMenu] = useState(null);
-
   const toggleMenu = (menu) => {
     setOpenMenu(openMenu === menu ? null : menu);
   };
-
-  // Submenu seçimləri id-yə görə
-  const [selectedItems, setSelectedItems] = useState({});
 
   const handleItemClick = (id) => {
     setSelectedItems((prev) => ({
@@ -129,13 +72,15 @@ function HrPage() {
   const getStatusClass = (status) => {
     switch (status) {
       case "Təsdiq":
+      case "approved":
         return "status approved";
       case "Rədd edildi":
+      case "rejected":
         return "status rejected";
       case "Gözləmədə":
-        return "status pending";
+      case "pending":
       default:
-        return "status";
+        return "status pending";
     }
   };
 
@@ -173,251 +118,96 @@ function HrPage() {
     return pages;
   };
 
+  // ✅ documentType tərcümə map
+  const translateType = (type) => {
+    const map = {
+      vacation: "Məzuniyyət",
+      business_trip: "Ezamiyyət",
+      illness: "Xəstəlik",
+      other: "Digər",
+      shinda: "Şinda",
+    };
+    return map[type] || type;
+  };
+
   return (
     <div className="hrPage">
       <table>
         <thead>
           <tr>
-            <th>
-              <div className="menu" onClick={() => toggleMenu("ad")}>
-                Ad Soyad{" "}
-                <div className="icon">
-                  <MdKeyboardArrowDown />
-                </div>
-                {openMenu === "ad" && (
-                  <div className="submenu">
-                    {name.map((group) => (
-                      <div key={group.letter}>
-                        <div className="group-header">{group.letter}</div>
-                        <ul>
-                          {group.names.map((item) => (
-                            <li
-                              key={item.id}
-                              className={
-                                selectedItems[item.id] ? "onclick" : ""
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleItemClick(item.id);
-                              }}
-                            >
-                              <p>{item.info}</p>
-                              <div
-                                className={`square ${
-                                  selectedItems[item.id] ? "onclickBox" : ""
-                                }`}
-                              >
-                                {selectedItems[item.id] && <IoMdCheckmark />}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </th>
-            <th>
-              <div className="menu" onClick={() => toggleMenu("nov")}>
-                Ərizə növü{" "}
-                <div className="icon">
-                  <MdKeyboardArrowDown />
-                </div>
-                {openMenu === "nov" && (
-                  <div className="submenu">
-                    <ul>
-                      {[
-                        { id: 1, name: "Məzuniyyət" },
-                        { id: 2, name: "Xəstəlik" },
-                        { id: 3, name: "Ezamiyyət" },
-                        { id: 4, name: "Məcburi səbəb" },
-                      ].map((item) => (
-                        <li
-                          key={item.id}
-                          className={selectedItems[item.id] ? "onclick" : ""}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleItemClick(item.id);
-                          }}
-                        >
-                          <p>{item.name}</p>
-                          <div
-                            className={`square ${
-                              selectedItems[item.id] ? "onclickBox" : ""
-                            }`}
-                          >
-                            {selectedItems[item.id] && <IoMdCheckmark />}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </th>
+            <th>Ad Soyad</th>
+            <th>Ərizə növü</th>
             <th>Sənəd nömrəsi</th>
-            <th>
-              <div className="menu" onClick={() => toggleMenu("soba")}>
-                Şöbə{" "}
-                <div className="icon">
-                  <MdKeyboardArrowDown />
-                </div>
-                {openMenu === "soba" && (
-                  <div className="submenu">
-                    <ul>
-                      {[
-                        { id: 5, name: "İT Dev Team" },
-                        { id: 6, name: "HR" },
-                        { id: 7, name: "Maliyyə" },
-                      ].map((item) => (
-                        <li
-                          key={item.id}
-                          className={selectedItems[item.id] ? "onclick" : ""}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleItemClick(item.id);
-                          }}
-                        >
-                          <p>{item.name}</p>
-                          <div
-                            className={`square ${
-                              selectedItems[item.id] ? "onclickBox" : ""
-                            }`}
-                          >
-                            {selectedItems[item.id] && <IoMdCheckmark />}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </th>
-            <th>
-              <div className="menu" onClick={() => toggleMenu("vezife")}>
-                Vəzifə{" "}
-                <div className="icon">
-                  <MdKeyboardArrowDown />
-                </div>
-                {openMenu === "vezife" && (
-                  <div className="submenu">
-                    <ul>
-                      {[
-                        { id: 9, name: "Front-end Developer" },
-                        { id: 10, name: "Back-end Developer" },
-                        { id: 11, name: "UX/UI Dizayner" },
-                      ].map((item) => (
-                        <li
-                          key={item.id}
-                          className={selectedItems[item.id] ? "onclick" : ""}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleItemClick(item.id);
-                          }}
-                        >
-                          <p>{item.name}</p>
-                          <div
-                            className={`square ${
-                              selectedItems[item.id] ? "onclickBox" : ""
-                            }`}
-                          >
-                            {selectedItems[item.id] && <IoMdCheckmark />}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </th>
+            <th>Şöbə</th>
+            <th>Vəzifə</th>
             <th>Qalıq icazə günü</th>
             <th>İcazə müddəti</th>
-            <th>Rədd səbəbi</th>
-            <th>
-              <div className="menu" onClick={() => toggleMenu("status")}>
-                Status{" "}
-                <div className="icon">
-                  <MdKeyboardArrowDown />
-                </div>
-                {openMenu === "status" && (
-                  <div className="submenu">
-                    <ul>
-                      {[
-                        { id: 9, name: "Təsdiq" },
-                        { id: 10, name: "Rədd edildi" },
-                        { id: 11, name: "Gözləmədə" },
-                      ].map((item) => (
-                        <li
-                          key={item.id}
-                          className={selectedItems[item.id] ? "onclick" : ""}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleItemClick(item.id);
-                          }}
-                        >
-                          <p>{item.name}</p>
-                          <div
-                            className={`square ${
-                              selectedItems[item.id] ? "onclickBox" : ""
-                            }`}
-                          >
-                            {selectedItems[item.id] && <IoMdCheckmark />}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </th>
+            <th>Açıqlama</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          {currentData.map((row, i) => (
-            <tr key={i}>
-              <td>{row.ad}</td>
-              <td>{row.nov}</td>
-              <td>{row.sened}</td>
-              <td>{row.soba}</td>
-              <td>{row.vezife}</td>
-              <td>{row.qaligGun}</td>
-              <td>
-                {row.muddet.split("\n").map((line, idx) => (
-                  <div className="time" key={idx}>
-                    <p>{line}</p>
+          {currentData.map((row) => {
+            // ✅ Əsas istifadəçi (formun sahibi)
+            const user = row.user || {};
+            const fullName = `${user.first_name || ""} ${user.last_name || ""}`;
+            const department = user.department || "—";
+            const jobname = user.jobname || "—";
+            const permissionDay = user.permission_day || 0;
+
+            return (
+              <tr key={row.id}>
+                <td>{fullName.trim() || "—"}</td>
+                <td>{translateType(row.documentType)}</td>
+                <td>{row.document_number}</td>
+                <td>{department}</td>
+                <td>{jobname}</td>
+                <td>{permissionDay}</td>
+                <td>
+                  <div>
+                    {dayjs(row.date_start).format("DD.MM.YYYY")} -{" "}
+                    {dayjs(row.date_end).format("DD.MM.YYYY")}
                   </div>
-                ))}
-              </td>
-              <td>
-                <div
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <p style={{ width: "130px" }}>{row.sebeb}</p>
-                </div>
-              </td>
-              <td>
-                <Link
-                  style={{ textDecoration: "none" }}
-                  to={"/hr/permission-info-detail"}
-                  className="statusBox"
-                >
-                  <span className={getStatusClass(row.status)}>
-                    {row.status}
-                    <div className="icon">
-                      <IoIosArrowRoundUp />
+                  {row.time_start && row.time_end && (
+                    <div>
+                      ({row.time_start && row.time_start.slice(0, 5)} –{" "}
+                      {row.time_end && row.time_end.slice(0, 5)})
                     </div>
-                  </span>
-                </Link>
-              </td>
-            </tr>
-          ))}
+                  )}
+                </td>
+                <td>
+                  <div
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <p style={{ width: "130px" }}>{row.description || "—"}</p>
+                  </div>
+                </td>
+                <td>
+                  <Link
+                    style={{ textDecoration: "none" }}
+                    to={`/hr/permission-info-detail/${row.id}`}
+                    className="statusBox"
+                  >
+                    <span className={getStatusClass(row.status || "pending")}>
+                      {row?.status === "approved"
+                        ? "Təsdiq "
+                        : row?.status === "rejected"
+                        ? "Rədd "
+                        : "Gözləmə"}
+                      <div className="icon">
+                        <IoIosArrowRoundUp />
+                      </div>
+                    </span>
+                  </Link>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 

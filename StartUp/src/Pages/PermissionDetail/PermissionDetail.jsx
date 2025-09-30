@@ -1,12 +1,13 @@
 import dayjs from "dayjs";
 import "dayjs/locale/az";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AiOutlineExclamation } from "react-icons/ai";
 import { FaFileContract } from "react-icons/fa";
 import { IoCheckmark } from "react-icons/io5";
 import { LiaDownloadSolid } from "react-icons/lia";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import "./PermissionDetail.scss";
+import axios from "axios";
 
 function PermissionDetail({ multiple = true, onSelect }) {
   const [open, setOpen] = useState({
@@ -16,7 +17,9 @@ function PermissionDetail({ multiple = true, onSelect }) {
     timer: true,
     type: true,
   });
-
+  const { id } = useParams();
+  const [data, setData] = useState(null);
+  dayjs.locale("az");
   // popup üçün ayrıca state
   const [popup, setPopup] = useState(null); // null | "cancel" | "approve"
 
@@ -31,7 +34,7 @@ function PermissionDetail({ multiple = true, onSelect }) {
   const [dailyEnd, setDailyEnd] = useState("");
   const [people, setPeople] = useState([
     { id: 1, name: "Ali İsmayıl", tick: false },
-    { id: 2, name: "Vəli Məmmədov", tick: false },
+    { id: 2, name: "Vəli Məmmədovaaa", tick: false },
     { id: 3, name: "Aygün Quliyeva", tick: false },
     { id: 4, name: "Murad Əliyev", tick: false },
     { id: 5, name: "Murad Əliyev", tick: false },
@@ -70,6 +73,25 @@ function PermissionDetail({ multiple = true, onSelect }) {
     setSelectedType(type);
     setOpen((p) => ({ ...p, type: false })); // seçəndən sonra bağla
   };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await axios.get(
+          `http://172.20.5.167:8000/api/hr/forms/${id}/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setData(res.data);
+        console.log("detail:", res.data);
+      } catch (err) {
+        console.error("Detail fetch error:", err);
+      }
+    };
+
+    fetchData();
+  }, [id]);
 
   return (
     <section id="permissionDetail">
@@ -112,39 +134,41 @@ function PermissionDetail({ multiple = true, onSelect }) {
           </div>
           <div className="box">
             <label>Ad soyad</label>
-            <p>Ali İsmayıl</p>
+            <p>
+              {data?.user?.first_name} {data?.user?.last_name}
+            </p>
           </div>
           <div className="box">
             <label>İşçi nömrəsi</label>
-            <p>1234</p>
+            <p>{data?.user?.staffnumber}</p>
           </div>
           <div className="box">
             <label>Vəzifə</label>
-            <p>UX/Uİ Dizayner</p>
+            <p>{data?.user?.jobname}</p>
           </div>
           <div className="box">
             <label>Şöbə</label>
-            <p>İT Dev Team</p>
+            <p>{data?.user?.department}</p>
           </div>
         </form>
       </div>
       <div className="documentSend">
         <h2>İcazə sənədi</h2>
         <div className="doxBox">
-         <div className="middle">
-             <div className="icon">
-            <FaFileContract />
+          <div className="middle">
+            <div className="icon">
+              <FaFileContract />
+            </div>
+            <div className="normal">
+              <p>{data?.documentType}</p>
+              <Link className="button" to={`${data?.document}`} target="_blank">
+                Yüklə{" "}
+                <div className="ico">
+                  <LiaDownloadSolid />
+                </div>
+              </Link>
+            </div>
           </div>
-          <div className="normal">
-            <p>Ali Ismayıl</p>
-            <button>
-              Yüklə{" "}
-              <div className="ico">
-                <LiaDownloadSolid />
-              </div>
-            </button>
-          </div>
-         </div>
         </div>
       </div>
       <div className="summaryBox">
@@ -152,47 +176,63 @@ function PermissionDetail({ multiple = true, onSelect }) {
         <div className="info">
           <div className="little">
             <p>Ad, soyad:</p>
-            <p>Rəşad Səmidli</p>
+            <p>
+              {data?.user?.first_name} {data?.user?.last_name}
+            </p>
           </div>
           <div className="little">
             <p>Vəzifə:</p>
-            <p>UX/Uİ Dizayner</p>
+            <p>{data?.user?.jobname}</p>
           </div>
           <div className="little">
             <p>İcazə növü:</p>
-            <p>{selectedType}</p>
+            <p>{data?.documentType}</p>
           </div>
           <div className="little">
             <p>Başlama tarixi:</p>
-            <p>09.25.2025</p>
+            <p>
+              {dayjs(data?.date_start).format("DD.MM.YYYY")} /{" "}
+              {data?.time_start.slice(0, 5)}
+            </p>
           </div>
           <div className="little">
             <p>Bitmə tarixi:</p>
-            <p>10.16.2025</p>
+            <p>
+              {dayjs(data?.date_end).format("DD.MM.YYYY")} /{" "}
+              {data?.time_end.slice(0, 5)}
+            </p>
           </div>
           <div className="little">
             <p>Təqvim günü sayı:</p>
-            <p>21</p>
+            <p>
+              {" "}
+              {data?.date_start && data?.date_end
+                ? `${dayjs(data.date_end).diff(
+                    dayjs(data.date_start),
+                    "day"
+                  )} gün`
+                : "-"}
+            </p>
           </div>
           <div className="little">
             <p>İşə çıxma tarixi:</p>
-            <p>10.18.2025</p>
+            <p>{data?.start_job_date}</p>
           </div>
           <div className="little">
             <p>Sənəd nömrəsi:</p>
-            <p>1234A56</p>
+            <p>{data?.document_number}</p>
           </div>
           <div className="little">
             <p>Şöbə:</p>
-            <p>İT Dev Team</p>
+            <p>{data?.user?.department}</p>
           </div>
           <div className="little">
-            <p>Yüklənmiş sənədlər:</p>
-            <p style={{ color: "#128C3C" }}>Hazır</p>
-          </div>
-          <div className="little">
-            <p>təsdiqləyəcək şəxslər:</p>
-            <p style={{ fontWeight: "bold" }}>HR Meneceri, Direktor</p>
+            <p>Təsdiqləyəcək şəxslər:</p>
+            <p style={{ fontWeight: "bold" }}>
+              {data?.accept_person
+                ?.map((p) => `${p.first_name} ${p.last_name}`)
+                .join(", ")}
+            </p>
           </div>
           <div className="buttons">
             <div className="button" onClick={() => setPopup("cancel")}>

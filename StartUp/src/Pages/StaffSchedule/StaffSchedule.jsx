@@ -1,186 +1,91 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./StaffSchedule.scss";
 import { IoArrowBackSharp, IoArrowForwardSharp } from "react-icons/io5";
+import axios from "axios";
+import dayjs from "dayjs";
+import { BaseUrl } from "../../BaseUrl";
 
 function StaffSchedule() {
-  const data = [
-    {
-      nov: "Məzuniyyət",
-      sened: "1234A56",
-      tesdiqleyici: "HR Meneceri",
-      sebeb: "Bu həftə task çox olduğuna görə",
-      muddet: "19.05.2025\n11.06.2025",
-      status: "Təsdiq",
-    },
-    {
-      nov: "Xəstəlik",
-      sened: "1234A56",
-      tesdiqleyici: "Direktor",
-      sebeb: "-------",
-      muddet: "19.05.2025 (10:00–12:00)",
-      status: "Rədd edildi",
-    },
-    {
-      nov: "Ezamiyyət",
-      sened: "1234A56",
-      tesdiqleyici: "Team Lead",
-      sebeb: "-------",
-      muddet: "19.05.2025 (10:00–12:00)",
-      status: "Gözləmədə",
-    },
-    {
-      nov: "Məcburi səbəb",
-      sened: "1234A56",
-      tesdiqleyici: "Lead Service",
-      sebeb: "Fərhad bəy məzuniyyətdədir.",
-      muddet: "19.05.2025 (10:00–12:00)",
-      status: "Rədd edildi",
-    },
-    {
-      nov: "Digər",
-      sened: "1234A56",
-      tesdiqleyici: "HR Meneceri",
-      sebeb: "-------",
-      muddet: "19.05.2025\n11.06.2025",
-      status: "Təsdiq",
-    },
-    {
-      nov: "Məzuniyyət",
-      sened: "1234A56",
-      tesdiqleyici: "Lead Service",
-      sebeb: "Aytac xanım əvəzlənməlidir.",
-      muddet: "19.05.2025",
-      status: "Rədd edildi",
-    },
-    // test üçün əlavə
-    {
-      nov: "Xəstəlik",
-      sened: "999",
-      tesdiqleyici: "Direktor",
-      sebeb: "---",
-      muddet: "20.05.2025",
-      status: "Təsdiq",
-    },
-    {
-      nov: "Ezamiyyət",
-      sened: "888",
-      tesdiqleyici: "Team Lead",
-      sebeb: "---",
-      muddet: "21.05.2025",
-      status: "Gözləmədə",
-    },
-    {
-      nov: "Digər",
-      sened: "777",
-      tesdiqleyici: "HR Meneceri",
-      sebeb: "---",
-      muddet: "22.05.2025",
-      status: "Rədd edildi",
-    },
-    {
-      nov: "Məzuniyyət",
-      sened: "666",
-      tesdiqleyici: "Lead Service",
-      sebeb: "---",
-      muddet: "23.05.2025",
-      status: "Təsdiq",
-    },
-    {
-      nov: "Xəstəlik",
-      sened: "999",
-      tesdiqleyici: "Direktor",
-      sebeb: "---",
-      muddet: "20.05.2025",
-      status: "Təsdiq",
-    },
-    {
-      nov: "Ezamiyyət",
-      sened: "888",
-      tesdiqleyici: "Team Lead",
-      sebeb: "---",
-      muddet: "21.05.2025",
-      status: "Gözləmədə",
-    },
-    {
-      nov: "Digər",
-      sened: "777",
-      tesdiqleyici: "HR Meneceri",
-      sebeb: "---",
-      muddet: "22.05.2025",
-      status: "Rədd edildi",
-    },
-    {
-      nov: "Məzuniyyət",
-      sened: "666",
-      tesdiqleyici: "Lead Service",
-      sebeb: "---",
-      muddet: "23.05.2025",
-      status: "Təsdiq",
-    },
-    {
-      nov: "Xəstəlik",
-      sened: "999",
-      tesdiqleyici: "Direktor",
-      sebeb: "---",
-      muddet: "20.05.2025",
-      status: "Təsdiq",
-    },
-    {
-      nov: "Ezamiyyət",
-      sened: "888",
-      tesdiqleyici: "Team Lead",
-      sebeb: "---",
-      muddet: "21.05.2025",
-      status: "Gözləmədə",
-    },
-    {
-      nov: "Digər",
-      sened: "777",
-      tesdiqleyici: "HR Meneceri",
-      sebeb: "---",
-      muddet: "22.05.2025",
-      status: "Rədd edildi",
-    },
-    {
-      nov: "Məzuniyyət",
-      sened: "666",
-      tesdiqleyici: "Lead Service",
-      sebeb: "---",
-      muddet: "23.05.2025",
-      status: "Təsdiq",
-    },
-  ];
-
-  // Pagination state
+  const [data, setData] = useState([]);
+  const [users, setUsers] = useState({}); // id → user məlumatı
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 6;
 
+  // 🔹 Tək user fetch
+  const fetchUser = async (id) => {
+    try {
+      if (users[id]) return; // artıq var
+      const token = localStorage.getItem("access_token");
+      const res = await axios.get(`${BaseUrl}/api/users/${id}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers((prev) => ({ ...prev, [id]: res.data }));
+    } catch (err) {
+      console.error("User fetch error:", err);
+    }
+  };
+
+  // 🔹 Formları fetch et
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const userId = localStorage.getItem("user_id");
+        if (!token || !userId) return;
+
+        const res = await axios.get(`${BaseUrl}/api/hr/forms/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const userForms = res.data.filter(
+          (f) => f.user && f.user.id === parseInt(userId)
+        );
+        setData(userForms);
+        console.log("userForms:", userForms);
+
+        // 🔹 Bütün accept_person_detail id-ləri topla
+        const allIds = [
+          ...new Set(
+            userForms.flatMap((form) => form.accept_person_detail || [])
+          ),
+        ];
+        // 🔹 Onları fetch et
+        allIds.forEach((id) => fetchUser(id));
+      } catch (err) {
+        console.error("API error:", err.response?.data || err.message);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Pagination
   const totalPages = Math.ceil(data.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const currentData = data.slice(startIndex, startIndex + rowsPerPage);
 
   const getStatusClass = (status) => {
     switch (status) {
-      case "Təsdiq":
+      case "approved":
         return "status approved";
-      case "Rədd edildi":
+      case "rejected":
         return "status rejected";
-      case "Gözləmədə":
+      case "pending":
         return "status pending";
       default:
         return "status";
     }
   };
+  const reversedData = [...data].reverse();
 
+  // pagination hesablanması
+  const indexOfLast = currentPage * rowsPerPage;
+  const indexOfFirst = indexOfLast - rowsPerPage;
+  const currentData = reversedData.slice(indexOfFirst, indexOfLast);
   const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
   const renderPagination = () => {
     const pages = [];
-
     for (let i = 1; i <= Math.min(3, totalPages); i++) {
       pages.push(
         <span
@@ -192,10 +97,8 @@ function StaffSchedule() {
         </span>
       );
     }
-
     if (totalPages > 4) {
       pages.push(<span key="dots">...</span>);
-
       pages.push(
         <span
           key={totalPages}
@@ -206,7 +109,6 @@ function StaffSchedule() {
         </span>
       );
     }
-
     return pages;
   };
 
@@ -224,64 +126,70 @@ function StaffSchedule() {
           </tr>
         </thead>
         <tbody>
-          {currentData.map((row, i) => (
-            <tr key={i}>
-              <td>{row.nov}</td>
-              <td>{row.sened}</td>
-              <td>{row.tesdiqleyici}</td>
-              <td>
-                <div
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <p style={{ width: "130px" }}>{row.sebeb}</p>
-                </div>
-              </td>
-              <td>
-                {row.muddet.split("\n").map((line, idx) => (
-                  <div key={idx}>{line}</div>
-                ))}
-              </td>
-              <td>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
+          {currentData.length > 0 ? (
+            currentData.map((row, i) => (
+              <tr key={i}>
+                <td>{row.documentType}</td>
+                <td>{row.document_number}</td>
+                <td>
+                  <div style={{ width: "130px" }}>
+                    {row?.accept_person_detail
+                      ?.map((p) => `${p.first_name} ${p.last_name}`)
+                      .join(", ")}
+                  </div>
+                </td>
+                <td>—</td>
+                <td>
+                  <div style={{ display: "flex", justifyContent: "center" }}>
+                    {dayjs(row.date_start).format("DD.MM.YYYY")} –{" "}
+                    {dayjs(row.date_end).format("DD.MM.YYYY")}
+                  </div>
+                  {row.time_start && row.time_end && (
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      ({row.time_start.slice(0, 5)} – {row.time_end.slice(0, 5)}
+                      )
+                    </div>
+                  )}
+                </td>
+                <td>
                   <span className={getStatusClass(row.status)}>
-                    {row.status}
+                    {row?.status === "approved"
+                      ? "Təsdiq"
+                      : row?.status === "rejected"
+                      ? "Rədd"
+                      : "Gözləmə"}
                   </span>
-                </div>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="6" style={{ textAlign: "center", padding: "20px" }}>
+                Heç bir məlumat tapılmadı
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
 
-      {/* Pagination */}
-      <div className="pagination">
-        <button
-          onClick={() => goToPage(currentPage - 1)}
-          disabled={currentPage === 1}
-          style={{ color: "#94A3AC" }}
-        >
-          <IoArrowBackSharp /> Əvvəl
-        </button>
-        <div className="pages">{renderPagination()}</div>
-        <button
-          onClick={() => goToPage(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Sonra <IoArrowForwardSharp />
-        </button>
-      </div>
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            style={{ color: "#94A3AC" }}
+          >
+            <IoArrowBackSharp /> Əvvəl
+          </button>
+          <div className="pages">{renderPagination()}</div>
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Sonra <IoArrowForwardSharp />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
