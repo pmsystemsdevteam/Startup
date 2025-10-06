@@ -16,9 +16,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { IoCheckmark } from "react-icons/io5";
 import { AiOutlineExclamation } from "react-icons/ai";
 import Back from "../../Video/back.gif";
-import { BaseUrl } from "../../BaseUrl";
-import axios from "axios";
-import { isAuthenticated, getUserId, logout } from "../../api";
+import api, { isAuthenticated, getUserId, logout } from "../../api";
 
 function StaffPage({ multiple = true, onSelect }) {
   const navigate = useNavigate();
@@ -32,17 +30,14 @@ function StaffPage({ multiple = true, onSelect }) {
 
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState("");
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   async function fetchUserData(userId) {
     try {
-      const res = await axios.get(`${BaseUrl}/api/users/${userId}/`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-      });
+      const res = await api.get(`/api/users/${userId}/`, {});
       setUserData(res.data);
-      console.log("setUserData", res.data);
       return res.data;
     } catch (err) {
       console.error("Employee fetch error:", err);
@@ -66,7 +61,6 @@ function StaffPage({ multiple = true, onSelect }) {
     fetchUserData(userId);
   }, [navigate]);
 
-  // digər state-lər
   const [popup, setPopup] = useState(null);
   const [files, setFiles] = useState([]);
   const inputRef = useRef(null);
@@ -76,16 +70,12 @@ function StaffPage({ multiple = true, onSelect }) {
   const [dailyEnd, setDailyEnd] = useState("");
   const [people, setPeople] = useState([]);
   const [description, setDescription] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState([]);
 
   async function fetchApprovers(companyId) {
     try {
-      const res = await axios.get(`${BaseUrl}/api/users/`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        },
-      });
+      const res = await api.get(`/api/users/`, {});
 
-      // Filtrləmə: eyni şirkət + yalnız HR, TeamLead, CEO
       const filtered = res.data
         .filter(
           (u) =>
@@ -96,7 +86,7 @@ function StaffPage({ multiple = true, onSelect }) {
           id: u.id,
           name: `${u.first_name} ${u.last_name}`,
           jobname: u.jobname,
-          tick: false,
+          jobtype: u.jobtype,
         }));
 
       setPeople(filtered);
@@ -106,32 +96,42 @@ function StaffPage({ multiple = true, onSelect }) {
   }
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      navigate("/login");
-      return;
-    }
     const userId = getUserId();
-    if (!userId) {
-      logout();
-      navigate("/login");
-      return;
+    if (userId) {
+      fetchUserData(userId).then((data) => {
+        if (data?.company?.id) {
+          fetchApprovers(data.company.id);
+        }
+      });
     }
-    fetchUserData(userId).then((data) => {
-      if (data?.company?.id) {
-        fetchApprovers(data.company.id);
-      }
-    });
   }, [navigate]);
 
-  const selectedPeople = people
-    .filter((p) => p.tick)
-    .map((p) => p.name)
-    .join(", ");
-
   const toggleTick = (id) => {
-    setPeople((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, tick: !p.tick } : p))
-    );
+    setSelectedOrder((prevOrder) => {
+      const exists = prevOrder.includes(id);
+      if (exists) {
+        return prevOrder.filter((personId) => personId !== id);
+      } else {
+        return [...prevOrder, id];
+      }
+    });
+  };
+
+  const getSelectedPeopleNames = () => {
+    return selectedOrder
+      .map((id) => {
+        const person = people.find((p) => p.id === id);
+        return person ? person.name : null;
+      })
+      .filter(Boolean)
+      .join(", ");
+  };
+
+  const isPersonSelected = (id) => selectedOrder.includes(id);
+
+  const getPersonOrderNumber = (id) => {
+    const index = selectedOrder.indexOf(id);
+    return index !== -1 ? index + 1 : null;
   };
 
   const openPicker = () => inputRef.current?.click();
@@ -151,72 +151,136 @@ function StaffPage({ multiple = true, onSelect }) {
     setOpen((p) => ({ ...p, type: false }));
   };
 
-const handleSubmit = async () => {
-  try {
-    const formData = new FormData();
+  const handleSubmit = async () => {
+    // --- START: ƏLAVƏ EDİLMİŞ HİSSƏ ---
+    const errors = [];
 
-    formData.append("documentType", selectedType || "");
-    formData.append("time_start", startTime || "");
-    formData.append("time_end", endTime || "");
-    formData.append(
-      "date_start",
-      dailyStart ? dailyStart.split(".").reverse().join("-") : ""
-    );
-    formData.append(
-      "date_end",
-      dailyEnd ? dailyEnd.split(".").reverse().join("-") : ""
-    );
-    formData.append("start_job_date", date ? date.format("YYYY-MM-DD") : "");
-    formData.append(
-      "calendar_count",
-      dailyStart && dailyEnd
-        ? Math.ceil(
-            (new Date(dailyEnd.split(".").reverse().join("-")) -
-              new Date(dailyStart.split(".").reverse().join("-"))) /
-              (1000 * 60 * 60 * 24)
-          )
-        : 0
-    );
-    formData.append("document_number", "444");
-    formData.append("description", description || "");
+    if (selectedType === "Ərizə növü seçin") {
+      errors.push("• Ərizə növü seçilməyib.");
+    }
+    
+    // Yalnız "Saatlıq" seçildikdə vaxtı yoxla
+    if (selectedType === "Saatlıq") {
+      if (!startTime) errors.push("• Başlama vaxtı daxil edilməyib.");
+      if (!endTime) errors.push("• Bitmə vaxtı daxil edilməyib.");
+    }
 
-    // ✅ accept_person düzəldildi
-    const selectedIds = people.filter((p) => p.tick).map((p) => p.id);
-    selectedIds.forEach((id) => {
-  formData.append("accept_person", id);  // 🔥 dəyişiklik burada
-});
+    if (!dailyStart) {
+      errors.push("• Başlama tarixi daxil edilməyib.");
+    }
+    if (!dailyEnd) {
+      errors.push("• Bitmə tarixi daxil edilməyib.");
+    }
 
+    if (!date) {
+      errors.push("• İşə çıxma tarixi seçilməyib.");
+    }
 
-    // ✅ Fayllar
-    files.forEach((file) => {
-      formData.append("document", file);
-    });
+    if (!description.trim()) {
+      errors.push("• Açıqlama sahəsi boş buraxıla bilməz.");
+    }
 
-    const res = await axios.post(`${BaseUrl}/api/hr/forms/`, formData, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    if (files.length === 0) {
+      errors.push("• Qoşma sənəd yüklənməyib.");
+    }
 
-    console.log("Form saved:", res.data);
-    setPopup("approve");
-    setTimeout(() => {
-      navigate("/staff/permission-history");
-    }, 2000);
-  } catch (err) {
-    console.error("Form submit error:", err.response?.data || err);
-    setPopup("cancel");
-  }
-};
+    if (selectedOrder.length === 0) {
+      errors.push("• Təsdiq edəcək şəxs seçilməyib.");
+    }
 
+    if (errors.length > 0) {
+      alert("Formu göndərmək üçün xətaları düzəldin:\n\n" + errors.join("\n"));
+      setSubmitLoading(false); // Yüklənməni dayandır
+      return; // Göndərmə prosesini ləğv et
+    }
+    // --- END: ƏLAVƏ EDİLMİŞ HİSSƏ ---
 
+    setSubmitLoading(true);
 
-  if (loading) return <p>Yüklənir...</p>;
+    try {
+      const formData = new FormData();
+      formData.append("documentType", selectedType || "");
+
+      if (selectedType === "Saatlıq") {
+        formData.append("time_start", startTime);
+        formData.append("time_end", endTime);
+      }
+
+      formData.append(
+        "date_start",
+        dailyStart ? dailyStart.split(".").reverse().join("-") : ""
+      );
+      formData.append(
+        "date_end",
+        dailyEnd ? dailyEnd.split(".").reverse().join("-") : ""
+      );
+      formData.append("start_job_date", date ? date.format("YYYY-MM-DD") : "");
+      formData.append(
+        "calendar_count",
+        dailyStart && dailyEnd
+          ? Math.ceil(
+              (new Date(dailyEnd.split(".").reverse().join("-")) -
+                new Date(dailyStart.split(".").reverse().join("-"))) /
+                (1000 * 60 * 60 * 24)
+            )
+          : 0
+      );
+      formData.append("document_number", "444");
+      formData.append("description", description || "");
+      selectedOrder.forEach((id) => {
+        formData.append("accept_person", id);
+      });
+      files.forEach((file) => {
+        formData.append("document", file);
+      });
+
+      const res = await api.post(`/api/hr/forms/`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setPopup("approve");
+      setTimeout(() => {
+        navigate("/staff/permission-history");
+      }, 2000);
+    } catch (err) {
+      console.error("Form submit error:", err.response?.data || err);
+      setPopup("cancel");
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  if (loading) return <div className="loader"></div>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
     <section id="staffPage">
+      {submitLoading && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            zIndex: 9998,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <div
+            className="loader"
+            style={{
+              position: "relative",
+            }}
+          ></div>
+        </div>
+      )}
+
       <h1>İcazə tələb formu</h1>
 
       <div
@@ -303,6 +367,7 @@ const handleSubmit = async () => {
               <ul>
                 {[
                   "Məzuniyyət",
+                  "Saatlıq",
                   "Ezamiyyət",
                   "Xəstəlik məzuniyyəti",
                   "Ödənişsiz məzuniyyət",
@@ -310,7 +375,7 @@ const handleSubmit = async () => {
                 ].map((item, index) => (
                   <li
                     key={index}
-                    onClick={(e) => {
+                    onClick={() => {
                       handleTypeSelect(item);
                       toggle("type");
                     }}
@@ -325,48 +390,49 @@ const handleSubmit = async () => {
             <label>Sənəd nömrəsi</label>
             <p>{userData?.documents?.[0]?.doc_num || "—"}</p>
           </div>
-          <div
-            className="box3 hasSubmenu"
-            style={{ cursor: "pointer" }}
-            onClick={() => toggle("hourly")}
-          >
-            <label>Saatlıq</label>
+
+          {selectedType === "Saatlıq" && (
             <div
-              className={`icon ${open.hourly ? "" : "active"}`}
-              aria-expanded={open.hourly}
-              aria-controls="submenu-hourly"
+              className="box3 hasSubmenu"
+              style={{ cursor: "pointer" }}
+              onClick={() => toggle("hourly")}
             >
-              <MdOutlineKeyboardArrowDown />
-            </div>
-            <p>
-              {startTime && endTime
-                ? `${startTime} - ${endTime}`
-                : "Başlama və bitmə vaxtını seçin"}
-            </p>
-            <div
-              id="submenu-hourly"
-              className={`submenu ${open.hourly ? "open" : ""}`}
-            >
-              <div className="littleBox" onClick={(e) => e.stopPropagation()}>
-                <label>Başlama vaxtı</label>
-                <input
-                  type="text"
-                  placeholder="15:30"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
+              <label>Saatlıq</label>
+              <div className={`icon ${open.hourly ? "" : "active"}`}>
+                <MdOutlineKeyboardArrowDown />
               </div>
-              <div className="littleBox" onClick={(e) => e.stopPropagation()}>
-                <label>Bitmə vaxtı</label>
-                <input
-                  type="text"
-                  placeholder="16:30"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
+              <p>
+                {startTime && endTime
+                  ? `${startTime} - ${endTime}`
+                  : "Başlama və bitmə vaxtını seçin"}
+              </p>
+              <div
+                className={`submenu ${open.hourly ? "open" : ""}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="littleBox">
+                  <label>Başlama vaxtı</label>
+                  <input
+                    type="text"
+                    placeholder="15:30"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="littleBox">
+                  <label>Bitmə vaxtı</label>
+                  <input
+                    type="text"
+                    placeholder="16:30"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div
             className="box4 hasSubmenu"
@@ -374,11 +440,7 @@ const handleSubmit = async () => {
             onClick={() => toggle("daily")}
           >
             <label>Günlük və aylıq</label>
-            <div
-              className={`icon ${open.daily ? "" : "active"}`}
-              aria-expanded={open.daily}
-              aria-controls="submenu-daily"
-            >
+            <div className={`icon ${open.daily ? "" : "active"}`}>
               <MdOutlineKeyboardArrowDown />
             </div>
             <p>
@@ -387,25 +449,27 @@ const handleSubmit = async () => {
                 : "Başlama və bitmə tarixini seçin"}
             </p>
             <div
-              id="submenu-daily"
               className={`submenu ${open.daily ? "open" : ""}`}
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="littleBox" onClick={(e) => e.stopPropagation()}>
+              <div className="littleBox">
                 <label>Başlama tarixi</label>
                 <input
                   type="text"
                   placeholder="dd.mm.yyyy"
                   value={dailyStart}
                   onChange={(e) => setDailyStart(e.target.value)}
+                  required
                 />
               </div>
-              <div className="littleBox" onClick={(e) => e.stopPropagation()}>
+              <div className="littleBox">
                 <label>Bitmə tarixi</label>
                 <input
                   type="text"
                   placeholder="dd.mm.yyyy"
                   value={dailyEnd}
                   onChange={(e) => setDailyEnd(e.target.value)}
+                  required
                 />
               </div>
             </div>
@@ -413,12 +477,7 @@ const handleSubmit = async () => {
 
           <div className="box5">
             <label>İşə çıxma tarixi</label>
-            <div
-              className="icon"
-              onClick={() => toggle("calendar")}
-              aria-expanded={open.calendar}
-              aria-controls="submenu-calendar"
-            >
+            <div className="icon" onClick={() => toggle("calendar")}>
               <IoCalendarClearOutline />
             </div>
             <div className={`datebox ${open.calendar ? "open" : ""}`}>
@@ -459,6 +518,7 @@ const handleSubmit = async () => {
               placeholder="İcazə səbəbi və əlavə məlumatlar....."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              required
             ></textarea>
           </div>
         </form>
@@ -486,6 +546,7 @@ const handleSubmit = async () => {
               multiple={multiple}
               onChange={handleChange}
               accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              required
             />
             {files.length > 0 && (
               <Box mt={1}>
@@ -507,37 +568,50 @@ const handleSubmit = async () => {
           <div className="icon">
             <MdOutlineKeyboardArrowDown />
           </div>
-
           <p>
-            {selectedPeople
-              ? selectedPeople
+            {selectedOrder.length > 0
+              ? getSelectedPeopleNames()
               : people.length > 0
               ? "Təsdiq edəcək şəxsi seçin"
               : "Uyğun təsdiqləyici yoxdur"}
           </p>
-
           <div
             className={`subMenu ${open.timer ? "open" : ""}`}
             onClick={(e) => e.stopPropagation()}
           >
             {people.length > 0 ? (
-              people.map((person) => (
-                <div
-                  key={person.id}
-                  className={`littleBox ${person.tick ? "onclick" : ""}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleTick(person.id);
-                  }}
-                >
-                  <div className={`square ${person.tick ? "onclickBox" : ""}`}>
-                    {person.tick && <IoMdCheckmark />}
+              people.map((person) => {
+                const isSelected = isPersonSelected(person.id);
+                const orderNum = getPersonOrderNumber(person.id);
+
+                return (
+                  <div
+                    key={person.id}
+                    className={`littleBox ${isSelected ? "onclick" : ""}`}
+                    onClick={() => {
+                      toggleTick(person.id);
+                    }}
+                  >
+                    <div className={`square ${isSelected ? "onclickBox" : ""}`}>
+                      {isSelected && <IoMdCheckmark />}
+                    </div>
+                    <span>
+                      {person.name} — {person.jobname}
+                      {orderNum && (
+                        <span
+                          style={{
+                            marginLeft: "8px",
+                            fontWeight: "bold",
+                            color: "#128c3c",
+                          }}
+                        >
+                          (Sıra: {orderNum})
+                        </span>
+                      )}
+                    </span>
                   </div>
-                  <span>
-                    {person.name} — {person.jobname}
-                  </span>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p style={{ padding: "10px", color: "#888" }}>
                 Yüklənir və ya təsdiqləyici tapılmadı
@@ -577,11 +651,11 @@ const handleSubmit = async () => {
             </p>
           </div>
           <div className="little">
-            <p>Təqvim günü sayı:</p>
+            <p>İşə çıxma tarixi:</p>
             <p>{date ? date.format("DD.MM.YYYY") : "—"}</p>
           </div>
           <div className="little">
-            <p>İşə çıxma tarixi:</p>
+            <p>Təqvim günü sayı:</p>
             <p>
               {dailyStart && dailyEnd
                 ? `${Math.ceil(
@@ -616,21 +690,20 @@ const handleSubmit = async () => {
                 : "Yoxdur"}
             </p>
           </div>
-
           <div className="little">
             <p>Təsdiq edəcək şəxslər:</p>
             <p style={{ fontWeight: "bold" }}>
-              {people.filter((p) => p.tick).length > 0
-                ? people
-                    .filter((p) => p.tick)
-                    .map((p) => `${p.jobname}`)
+              {selectedOrder.length > 0
+                ? selectedOrder
+                    .map((id, index) => {
+                      const person = people.find((p) => p.id === id);
+                      return person ? `${index + 1}. ${person.jobname}` : null;
+                    })
+                    .filter(Boolean)
                     .join(", ")
-                : people.length > 0
-                ? "—"
-                : "Uyğun təsdiqləyici yoxdur"}
+                : "—"}
             </p>
           </div>
-
           <div className="buttons">
             <div className="button" onClick={() => setPopup("cancel")}>
               Sil
@@ -646,8 +719,8 @@ const handleSubmit = async () => {
               target="_blank"
               className="linkk"
             >
-              PM Systems{" "}
-            </Link>
+              PM Systems
+            </Link>{" "}
             tərəfindən hazırlanmışdır.
           </div>
         </div>

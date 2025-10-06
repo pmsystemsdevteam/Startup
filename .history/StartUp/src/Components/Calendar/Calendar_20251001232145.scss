@@ -1,0 +1,535 @@
+/* ==================== MODAL OVERLAY ==================== */
+.calendarModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  width: 100vw;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ==================== MODAL CONTAINER ==================== */
+.calendarModal {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 480px;
+  width: 100%;
+  position: relative;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    0 8px 24px rgba(0, 0, 0, 0.12);
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ==================== HEADER ==================== */
+.calendarHeader {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.calendarTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+}
+
+.calendarSubtitle {
+  font-size: 14px;
+  font-weight: 400;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ==================== CLOSE BUTTON ==================== */
+.closeBtn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #94a3b8;
+  border: none;
+  background: #f8fafc;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    background: #fee2e2;
+    color: #dc2626;
+    transform: rotate(90deg);
+  }
+
+  &:active {
+    transform: rotate(90deg) scale(0.92);
+  }
+}
+
+/* ==================== REACT CALENDAR CORE ==================== */
+.react-calendar {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.5;
+
+  /* ========== NAVIGATION ========== */
+  &__navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    height: 48px;
+
+    button {
+      min-width: 44px;
+      height: 44px;
+      background: #f8fafc;
+      border: none;
+      border-radius: 12px;
+      color: #334155;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:enabled:hover {
+        background: #128c3c;
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(18, 140, 60, 0.25);
+      }
+
+      &:disabled {
+        background: #f1f5f9;
+        color: #cbd5e1;
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      &.react-calendar__navigation__label {
+        flex-grow: 1;
+        margin: 0 8px;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+    }
+  }
+
+  /* ========== MONTH VIEW ========== */
+  &__month-view {
+    &__weekdays {
+      text-align: center;
+      font-weight: 600;
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+
+      abbr {
+        text-decoration: none;
+        cursor: default;
+      }
+
+      &__weekday {
+        padding: 12px 0;
+      }
+    }
+
+    &__days {
+      display: grid !important;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+
+      button {
+        aspect-ratio: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        padding: 0;
+      }
+    }
+  }
+
+  /* ========== TILE STYLES ========== */
+  &__tile {
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    color: #334155;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: visible;
+
+    abbr {
+      position: relative;
+      z-index: 1;
+    }
+
+    &:enabled:hover {
+      background: #ecfdf5;
+      color: #059669;
+      transform: scale(1.08);
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+    }
+
+    &:disabled {
+      color: #cbd5e1;
+      cursor: not-allowed;
+      background: transparent;
+    }
+
+    /* Active/Selected Tile */
+    &--active {
+      background: linear-gradient(135deg, #128c3c 0%, #0d7230 100%) !important;
+      color: #ffffff !important;
+      font-weight: 700;
+      box-shadow: 
+        0 4px 16px rgba(18, 140, 60, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+      &:enabled:hover {
+        background: linear-gradient(135deg, #0f7a33 0%, #0a5d26 100%) !important;
+        transform: scale(1.05);
+      }
+    }
+
+    /* Today */
+    &--now {
+      background: #fef3c7;
+      color: #92400e;
+      font-weight: 700;
+
+      &:enabled:hover {
+        background: #fde68a;
+        color: #78350f;
+      }
+
+      abbr {
+        position: relative;
+        
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: -6px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 4px;
+          height: 4px;
+          background: #f59e0b;
+          border-radius: 50%;
+        }
+      }
+    }
+
+    /* Neighboring Month */
+    &--neighboringMonth {
+      color: #cbd5e1;
+      
+      &:enabled:hover {
+        color: #94a3b8;
+      }
+    }
+  }
+}
+
+/* ==================== HOLIDAY STYLES ==================== */
+.holiday-dot {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: #dc2626;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateX(-50%) scale(1.2);
+  }
+}
+
+.holiday-tile {
+  color: #dc2626 !important;
+  font-weight: 700;
+  background: #fef2f2;
+
+  &:enabled:hover {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    transform: scale(1.08);
+  }
+
+  &.react-calendar__tile--active {
+    background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+    color: #ffffff !important;
+  }
+}
+
+/* ==================== HOLIDAY INFO CARD ==================== */
+.holidayInfo {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-radius: 16px;
+  border: 2px solid #fecaca;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.holidayInfoIcon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.holidayInfoContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.holidayInfoTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #991b1b;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+}
+
+.holidayInfoDate {
+  font-size: 13px;
+  font-weight: 500;
+  color: #dc2626;
+  margin: 0;
+}
+
+/* ==================== LEGEND ==================== */
+.calendarLegend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #f1f5f9;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendDotHoliday {
+  background: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+}
+
+.legendDotToday {
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.legendText {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+@media (max-width: 600px) {
+  .calendarModal {
+    max-width: 95%;
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+
+  .calendarTitle {
+    font-size: 20px;
+  }
+
+  .calendarSubtitle {
+    font-size: 13px;
+  }
+
+  .closeBtn {
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .react-calendar {
+    &__tile {
+      font-size: 13px;
+    }
+
+    &__navigation button {
+      min-width: 40px;
+      height: 40px;
+      font-size: 16px;
+
+      &.react-calendar__navigation__label {
+        font-size: 15px;
+      }
+    }
+
+    &__month-view__weekdays {
+      font-size: 11px;
+
+      &__weekday {
+        padding: 10px 0;
+      }
+    }
+  }
+
+  .holidayInfo {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .holidayInfoIcon {
+    font-size: 28px;
+  }
+
+  .holidayInfoTitle {
+    font-size: 14px;
+  }
+
+  .holidayInfoDate {
+    font-size: 12px;
+  }
+
+  .calendarLegend {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 400px) {
+  .calendarModal {
+    padding: 20px 16px;
+  }
+
+  .react-calendar {
+    &__tile {
+      font-size: 12px;
+      border-radius: 8px;
+    }
+
+    &__month-view__days {
+      gap: 2px;
+    }
+  }
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+.react-calendar__tile:focus-visible {
+  outline: 3px solid #128c3c;
+  outline-offset: 2px;
+  z-index: 10;
+}
+
+.closeBtn:focus-visible {
+  outline: 3px solid #128c3c;
+  outline-offset: 2px;
+}

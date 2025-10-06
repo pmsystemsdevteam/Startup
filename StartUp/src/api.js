@@ -126,7 +126,7 @@ api.interceptors.response.use(
   }
 );
 
-/** ====== Util: JWT decode (fallback üçün) ====== */
+/** ====== Util: JWT decode ====== */
 function parseJwt(token) {
   try {
     const base64Url = token.split(".")[1];
@@ -147,7 +147,6 @@ function normalizeJobtype(v) {
   if (!v) return null;
   const s = String(v).toLowerCase();
   if (["staff", "hr", "lead", "teamlead", "ceo"].includes(s)) return s;
-  // bəzi backend-lərdə role/status/user_type ola bilər
   if (s.includes("team")) return "teamlead";
   if (s.includes("leader")) return "lead";
   return s;
@@ -155,18 +154,15 @@ function normalizeJobtype(v) {
 
 /** ====== Auth API ====== */
 export async function loginUsernamePassword(username, password) {
-  // Burada axios.post istifadə edirik ki, 401-lik interceptora ilişməsin
   const { data } = await axios.post(
     TOKEN_URL,
     { username, password },
     { headers: { "Content-Type": "application/json" } }
   );
 
-  // 1) login cavabından götür
   let jobtype =
     data?.jobtype || data?.job_type || data?.role || data?.status || null;
 
-  // 2) access JWT-dən oxu (əgər lazımdırsa)
   if (!jobtype && data?.access) {
     const payload = parseJwt(data.access) || {};
     jobtype =
@@ -178,7 +174,6 @@ export async function loginUsernamePassword(username, password) {
       null;
   }
 
-  // 3) normalize
   jobtype = normalizeJobtype(jobtype);
 
   setTokens({
@@ -188,10 +183,13 @@ export async function loginUsernamePassword(username, password) {
     jobtype,
   });
 
+  // 🔹 Əlavə: token + jobtype tam yazıldığından əmin ol
+  await ensureJobtypeInStorage();
+
   return data;
 }
 
-/** ====== Fallback: jobtype storage-da yoxdursa, serverdən gətir ====== */
+/** ====== Fallback: jobtype yoxdursa ====== */
 export async function ensureJobtypeInStorage() {
   let jt = getUserJobtype();
   if (jt) return jt;
@@ -218,8 +216,8 @@ export async function ensureJobtypeInStorage() {
       });
       return norm;
     }
-  } catch (e) {
-    // ignore – redirect fallback işlər
+  } catch {
+    // ignore
   }
   return null;
 }
