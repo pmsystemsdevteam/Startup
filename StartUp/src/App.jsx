@@ -14,7 +14,6 @@ import Search from "./LayOut/Search/Search";
 
 import StaffPage from "./Pages/Staff/StaffPage";
 import StaffSchedule from "./Pages/StaffSchedule/StaffSchedule";
-import HrSchedule from "./Pages/HrSchedule/HrSchedule";
 import HrPage from "./Pages/Hr/HrPage";
 import PermissionDetail from "./Pages/PermissionDetail/PermissionDetail";
 import Login from "./Pages/Login/Login";
@@ -23,9 +22,12 @@ import LeadPage from "./Pages/Lead/LeadPage";
 import LeadStaffSchedule from "./Pages/LeadStaffSchedule/LeadStaffSchedule";
 import LeadSchedule from "./Pages/LeadSchedule/LeadSchedule";
 import LeadRequest from "./Pages/LeadRequest/LeadRequest";
+import HrStaffSchedule from "./Pages/HrStaffSchedule/HrStaffSchedule";
+import HrSchedule from "./Pages/HrSchedule/HrSchedule";
+import HrRequest from "./Pages/HrRequest/HrRequest";
+import Loading from "./Components/Loading/Loading";
 
-
-/* --- Qorunan Layout: Dashboard + Search həmişə açıq, altında Outlet --- */ 
+/* --- Qorunan Layout: Dashboard + Search həmişə açıq, altında Outlet --- */
 function ProtectedLayout() {
   if (!isAuthenticated()) return <Navigate to="/login" replace />;
   return (
@@ -52,8 +54,7 @@ function RoleRedirect() {
   }, []);
 
   if (!isAuthenticated()) return <Navigate to="/login" replace />;
-  if (loading) return <div className="loader"></div>
-;
+  if (loading) return <Loading/>;
 
   if (jobtype === "staff")
     return <Navigate to="/staff/permission-info" replace />;
@@ -64,8 +65,7 @@ function RoleRedirect() {
   // fallback
   return <Navigate to="/staff/permission-info" replace />;
 }
-
-export default function App() {
+function App() {
   return (
     <BrowserRouter>
       <Routes>
@@ -76,25 +76,39 @@ export default function App() {
         <Route element={<ProtectedLayout />}>
           {/* Root-a gələndə rola görə yönləndir */}
           <Route path="/" element={<RoleRedirect />} />
-
           {/* Staff */}
           <Route path="/staff/permission-info" element={<StaffPage />} />
           <Route path="/staff/permission-history" element={<StaffSchedule />} />
-
           {/* HR */}
           <Route path="/hr/permission-info" element={<HrPage />} />
-          <Route path="/hr/permission-history" element={<HrSchedule />} />
-          <Route path="/hr/permission-history-detail/:id" element={<PermissionDetail />} />
+          <Route path="/hr/permission-history" element={<HrStaffSchedule />} />
+          <Route
+            path="/hr/lead-permission-history"
+            element={<HrSchedule />}
+          />
+          {/* Rəhbər İcazə Keçmişi*/}
+          <Route path="/hr/hr-request" element={<HrRequest />} />{" "}
+          {/* Rəhbər
+          Müraciəti*/}
+          <Route
+            path="/hr/permission-history-detail/:id"
+            element={<PermissionDetail />}
+          />
           <Route
             path="/hr/permission-info-detail/:id"
             element={<PermissionDetail />}
           />
-
           {/* Lead */}
           <Route path="/lead/lead-request" element={<LeadRequest />} />
           <Route path="/lead/permission-info" element={<LeadPage />} />
-          <Route path="/lead/permission-history" element={<LeadStaffSchedule />} />
-          <Route path="/lead/lead-permission-history" element={<LeadSchedule />} />
+          <Route
+            path="/lead/permission-history"
+            element={<LeadStaffSchedule />}
+          />
+          <Route
+            path="/lead/lead-permission-history"
+            element={<LeadSchedule />}
+          />
         </Route>
 
         {/* Catch-all → root (orada RoleRedirect işləyəcək) */}
@@ -103,3 +117,5 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
+export default App;

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import "./HrSchedule.scss";
+import "./HrStaffSchedule.scss";
 import { IoArrowBackSharp, IoArrowForwardSharp } from "react-icons/io5";
 import { MdKeyboardArrowDown } from "react-icons/md";
 import { IoMdCheckmark } from "react-icons/io";
 import axios from "axios";
 import dayjs from "dayjs";
 
-function HrSchedule() {
+function HrStaffSchedule() {
   const [data, setData] = useState([]);
   const [users, setUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -18,7 +18,7 @@ function HrSchedule() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/hr/forms/my_requests/`, {
+        const res = await axios.get(`${API_BASE_URL}/api/hr/forms/my_history/`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("access_token")}`,
@@ -451,4 +451,4 @@ function HrSchedule() {
   );
 }
 
-export default HrSchedule;
+export default HrStaffSchedule;

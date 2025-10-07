@@ -5,6 +5,7 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import { IoMdCheckmark } from "react-icons/io";
 import axios from "axios";
 import dayjs from "dayjs";
+import Loading from "../../Components/Loading/Loading";
 
 function LeadPage() {
   const [data, setData] = useState([]);
@@ -262,15 +263,7 @@ function LeadPage() {
 
       {/* Loading indicator */}
       {loading && (
-        <div
-          className="loader"
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        ></div>
+        <Loading/>
       )}
 
       <table>

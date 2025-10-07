@@ -4,8 +4,7 @@ import logo from "../../Image/PmsLogo.png";
 import "./Dashboard.scss";
 import api, { isAuthenticated, getUserId, logout } from "../../api";
 import { IoExitOutline } from "react-icons/io5";
-
-
+import Loading from "../../Components/Loading/Loading";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -13,15 +12,11 @@ function Dashboard() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-
-
   useEffect(() => {
     if (!isAuthenticated()) {
       navigate("/login");
       return;
     }
-
-
 
     const userId = getUserId();
     if (!userId) {
@@ -29,8 +24,6 @@ function Dashboard() {
       navigate("/login");
       return;
     }
-
-
 
     const fetchUser = async () => {
       try {
@@ -44,32 +37,22 @@ function Dashboard() {
       }
     };
 
-
-
     fetchUser();
   }, [navigate]);
-
-
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
-
-
-  if (loading) return <div className="loader"></div>;
+  if (loading) return <Loading/>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
-
-
 
   return (
     <nav id="dashboard">
       <div className="logo-container">
         <img src={user?.company?.image} alt="Project Management Systems Logo" />
       </div>
-
-
 
       <ul className="nav-menu">
         <li>
@@ -83,13 +66,15 @@ function Dashboard() {
                 ? "lead"
                 : "lead"
             }/permission-info`}
-            className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
           >
-            {user.jobtype === "staff" ? "İstifadəçi məlumatları" : "İcazə məlumatları"}
+            {user.jobtype === "staff"
+              ? "İstifadəçi məlumatları"
+              : "İcazə məlumatları"}
           </NavLink>
         </li>
-
-
 
         <li>
           <NavLink
@@ -102,43 +87,43 @@ function Dashboard() {
                 ? "lead"
                 : "lead"
             }/permission-history`}
-            className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
           >
             İcazə keçmişi
           </NavLink>
         </li>
 
-
-
-        {/* Lead müraciəti - staff və boss xaric hamı görür */}
+        {/* Rəhbər müraciəti - staff və boss xaric hamı görür (HR və Lead) */}
         {user.jobtype !== "staff" && user.jobtype?.toLowerCase() !== "boss" && (
           <li>
             <NavLink
-              to={`/${user.jobtype === "hr" ? "hr" : "lead"}/lead-request`}
-              className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+              to={`/${user.jobtype === "hr" ? "hr" : "lead"}/${user.jobtype === "hr" ? "hr-request" : "lead-request"}`}
+              className={({ isActive }) =>
+                isActive ? "nav-link active" : "nav-link"
+              }
             >
               Rəhbər müraciəti
             </NavLink>
           </li>
         )}
 
-
-
-        {/* Əlavə permission history səhifəsi "staff" və "boss" xaricində */}
+        {/* Rəhbər İcazə keçmişi - "staff" və "boss" xaricində */}
         {user.jobtype !== "staff" && user.jobtype?.toLowerCase() !== "boss" && (
           <li>
             <NavLink
               to={`/${
                 user.jobtype === "hr" ? "hr" : "lead"
               }/lead-permission-history`}
-              className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+              className={({ isActive }) =>
+                isActive ? "nav-link active" : "nav-link"
+              }
             >
               Rəhbər İcazə keçmişi
             </NavLink>
           </li>
         )}
-
-
 
         {user && (
           <div className="userBox" style={{ marginTop: "auto" }}>
@@ -146,8 +131,6 @@ function Dashboard() {
               {user.first_name?.[0]}
               {user.last_name?.[0]}
             </div>
-
-
 
             <div className="text">
               <span>
@@ -158,12 +141,10 @@ function Dashboard() {
           </div>
         )}
 
-
-
         {/* Çıxış düyməsi */}
         <li style={{ marginTop: "1rem" }}>
           <button className="nav-link-logout" onClick={handleLogout}>
-            <p>Çıxış</p>{" "}
+            <p>Çıxış</p>
             <div className="icon">
               <IoExitOutline />
             </div>
@@ -173,7 +154,5 @@ function Dashboard() {
     </nav>
   );
 }
-
-
 
 export default Dashboard;

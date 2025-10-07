@@ -1,4 +1,4 @@
-import "./StaffPage.scss";
+import "./HrRequest.scss";
 import { IoCalendarClearOutline } from "react-icons/io5";
 import dayjs from "dayjs";
 import "dayjs/locale/az";
@@ -19,7 +19,7 @@ import Back from "../../Video/back.gif";
 import api, { isAuthenticated, getUserId, logout } from "../../api";
 import Loading from "../../Components/Loading/Loading";
 
-function StaffPage({ multiple = true, onSelect }) {
+function HrRequest({ multiple = true, onSelect }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState({
     hourly: true,
@@ -33,7 +33,6 @@ function StaffPage({ multiple = true, onSelect }) {
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [error, setError] = useState("");
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   async function fetchUserData(userId) {
     try {
@@ -73,22 +72,37 @@ function StaffPage({ multiple = true, onSelect }) {
   const [description, setDescription] = useState("");
   const [selectedOrder, setSelectedOrder] = useState([]);
 
-  async function fetchApprovers(companyId) {
+  async function fetchApprovers(companyId, currentUserJobType) {
     try {
       const res = await api.get(`/api/users/`, {});
 
-      const filtered = res.data
-        .filter(
-          (u) =>
-            u.company?.id === companyId &&
-            ["hr", "teamlead", "ceo"].includes(u.jobtype?.toLowerCase())
-        )
-        .map((u) => ({
-          id: u.id,
-          name: `${u.first_name} ${u.last_name}`,
-          jobname: u.jobname,
-          jobtype: u.jobtype,
-        }));
+      let filtered = [];
+
+      // Əgər login olan CEO-dursa, yalnız BOSS göstərilsin
+      if (currentUserJobType?.toLowerCase() === "ceo") {
+        filtered = res.data
+          .filter((u) => u.jobtype?.toLowerCase() === "boss")
+          .map((u) => ({
+            id: u.id,
+            name: `${u.first_name} ${u.last_name}`,
+            jobname: u.jobname,
+            jobtype: u.jobtype,
+          }));
+      }
+      // Əgər login olan CEO deyilsə, yalnız CEO göstərilsin
+      else {
+        filtered = res.data
+          .filter(
+            (u) =>
+              u.company?.id === companyId && u.jobtype?.toLowerCase() === "ceo"
+          )
+          .map((u) => ({
+            id: u.id,
+            name: `${u.first_name} ${u.last_name}`,
+            jobname: u.jobname,
+            jobtype: u.jobtype,
+          }));
+      }
 
       setPeople(filtered);
     } catch (err) {
@@ -101,7 +115,7 @@ function StaffPage({ multiple = true, onSelect }) {
     if (userId) {
       fetchUserData(userId).then((data) => {
         if (data?.company?.id) {
-          fetchApprovers(data.company.id);
+          fetchApprovers(data.company.id, data.jobtype);
         }
       });
     }
@@ -153,14 +167,12 @@ function StaffPage({ multiple = true, onSelect }) {
   };
 
   const handleSubmit = async () => {
-    // --- START: ƏLAVƏ EDİLMİŞ HİSSƏ ---
     const errors = [];
 
     if (selectedType === "Ərizə növü seçin") {
       errors.push("• Ərizə növü seçilməyib.");
     }
-    
-    // Yalnız "Saatlıq" seçildikdə vaxtı yoxla
+
     if (selectedType === "Saatlıq") {
       if (!startTime) errors.push("• Başlama vaxtı daxil edilməyib.");
       if (!endTime) errors.push("• Bitmə vaxtı daxil edilməyib.");
@@ -172,23 +184,23 @@ function StaffPage({ multiple = true, onSelect }) {
     if (!dailyEnd) {
       errors.push("• Bitmə tarixi daxil edilməyib.");
     }
-// 🔹 Təqvim günü sayını hesabla
-let calendarDays = 0;
-if (dailyStart && dailyEnd) {
-  calendarDays = Math.ceil(
-    (new Date(dailyEnd.split(".").reverse().join("-")) -
-      new Date(dailyStart.split(".").reverse().join("-"))) /
-      (1000 * 60 * 60 * 24)
-  );
-}
+    // 🔹 Təqvim günü sayını hesabla
+    let calendarDays = 0;
+    if (dailyStart && dailyEnd) {
+      calendarDays = Math.ceil(
+        (new Date(dailyEnd.split(".").reverse().join("-")) -
+          new Date(dailyStart.split(".").reverse().join("-"))) /
+          (1000 * 60 * 60 * 24)
+      );
+    }
 
-// 🔹 Qalıq icazə günləri ilə müqayisə et
-const permissionDay = userData?.permission_day ?? 0;
-if (calendarDays > permissionDay) {
-  errors.push(
-    `• Təqvim günü sayı (${calendarDays} gün) qalıq icazə günlərindən (${permissionDay} gün) çoxdur!`
-  );
-}
+    // 🔹 Qalıq icazə günləri ilə müqayisə et
+    const permissionDay = userData?.permission_day ?? 0;
+    if (calendarDays > permissionDay) {
+      errors.push(
+        `• Təqvim günü sayı (${calendarDays} gün) qalıq icazə günlərindən (${permissionDay} gün) çoxdur!`
+      );
+    }
 
     if (!date) {
       errors.push("• İşə çıxma tarixi seçilməyib.");
@@ -208,10 +220,9 @@ if (calendarDays > permissionDay) {
 
     if (errors.length > 0) {
       alert("Formu göndərmək üçün xətaları düzəldin:\n\n" + errors.join("\n"));
-      setSubmitLoading(false); // Yüklənməni dayandır
-      return; // Göndərmə prosesini ləğv et
+      setSubmitLoading(false);
+      return;
     }
-    // --- END: ƏLAVƏ EDİLMİŞ HİSSƏ ---
 
     setSubmitLoading(true);
 
@@ -276,7 +287,22 @@ if (calendarDays > permissionDay) {
   return (
     <section id="staffPage">
       {submitLoading && (
-        <Loading/>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            zIndex: 20,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <div className="loader" style={{ position: "relative" }}></div>
+        </div>
       )}
 
       <h1>İcazə tələb formu</h1>
@@ -727,4 +753,4 @@ if (calendarDays > permissionDay) {
   );
 }
 
-export default StaffPage;
+export default HrRequest;

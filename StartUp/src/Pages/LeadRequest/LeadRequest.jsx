@@ -17,6 +17,7 @@ import { IoCheckmark } from "react-icons/io5";
 import { AiOutlineExclamation } from "react-icons/ai";
 import Back from "../../Video/back.gif";
 import api, { isAuthenticated, getUserId, logout } from "../../api";
+import Loading from "../../Components/Loading/Loading";
 
 function LeadRequest({ multiple = true, onSelect }) {
   const navigate = useNavigate();
@@ -183,6 +184,23 @@ function LeadRequest({ multiple = true, onSelect }) {
     if (!dailyEnd) {
       errors.push("• Bitmə tarixi daxil edilməyib.");
     }
+// 🔹 Təqvim günü sayını hesabla
+let calendarDays = 0;
+if (dailyStart && dailyEnd) {
+  calendarDays = Math.ceil(
+    (new Date(dailyEnd.split(".").reverse().join("-")) -
+      new Date(dailyStart.split(".").reverse().join("-"))) /
+      (1000 * 60 * 60 * 24)
+  );
+}
+
+// 🔹 Qalıq icazə günləri ilə müqayisə et
+const permissionDay = userData?.permission_day ?? 0;
+if (calendarDays > permissionDay) {
+  errors.push(
+    `• Təqvim günü sayı (${calendarDays} gün) qalıq icazə günlərindən (${permissionDay} gün) çoxdur!`
+  );
+}
 
     if (!date) {
       errors.push("• İşə çıxma tarixi seçilməyib.");
@@ -263,28 +281,13 @@ function LeadRequest({ multiple = true, onSelect }) {
     }
   };
 
-  if (loading) return <div className="loader"></div>;
+  if (loading) return <Loading/>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
     <section id="staffPage">
       {submitLoading && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            zIndex: 9998,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <div className="loader" style={{ position: "relative" }}></div>
-        </div>
+       <Loading/>
       )}
 
       <h1>İcazə tələb formu</h1>

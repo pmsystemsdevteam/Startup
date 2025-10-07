@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import "./HrPage.scss";
 import { IoArrowBackSharp, IoArrowForwardSharp } from "react-icons/io5";
 import { IoIosArrowRoundUp } from "react-icons/io";
-import { MdKeyboardArrowDown } from "react-icons/md";
-import { IoMdCheckmark } from "react-icons/io";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -27,24 +25,29 @@ function HrPage() {
           return;
         }
 
-        // 🔹 Əvvəl user-in məlumatını çəkirik
+        // 🔹 User məlumatını çəkirik
         const userRes = await axios.get(
           `${API_BASE_URL}/api/users/${userId}/`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        const userCompany = userRes.data.company.companyName;
+        
+        const isSuperHR = userRes.data.is_super_hr;
+        const userCompany = userRes.data.company?.companyName;
 
         // 🔹 Formları çəkirik
         const res = await axios.get(`${API_BASE_URL}/api/hr/forms/to_approve/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // 🔹 Yalnız həmin company-də olan user-lərin formaları qalsın
-        const filtered = res.data.filter(
-          (form) => form.user && form.user.company.companyName === userCompany
-        );
+        // 🔹 SuperHR üçün company filter tətbiq edilmir
+        let filtered = res.data;
+        if (!isSuperHR && userCompany) {
+          filtered = res.data.filter(
+            (form) => form.user && form.user.company?.companyName === userCompany
+          );
+        }
 
         setData(filtered);
       } catch (err) {
@@ -119,7 +122,6 @@ function HrPage() {
     return pages;
   };
 
-  // ✅ documentType tərcümə map
   const translateType = (type) => {
     const map = {
       vacation: "Məzuniyyət",
@@ -127,6 +129,8 @@ function HrPage() {
       illness: "Xəstəlik",
       other: "Digər",
       shinda: "Şinda",
+      Ezamiyyət: "Ezamiyyət",
+      Məzuniyyət: "Məzuniyyət",
     };
     return map[type] || type;
   };
@@ -149,7 +153,6 @@ function HrPage() {
         </thead>
         <tbody>
           {currentData.map((row) => {
-            // ✅ Əsas istifadəçi (formun sahibi)
             const user = row.user || {};
             const fullName = `${user.first_name || ""} ${user.last_name || ""}`;
             const department = user.department || "—";
@@ -212,7 +215,6 @@ function HrPage() {
         </tbody>
       </table>
 
-      {/* Pagination */}
       <div className="pagination">
         <button
           onClick={() => goToPage(currentPage - 1)}
