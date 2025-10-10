@@ -41,7 +41,7 @@ function StaffSchedule() {
           (f) => f.user && f.user.id === parseInt(userId)
         );
         setData(userForms);
-        console.log("userForms:", userForms);
+        // console.log("userForms:", userForms);
 
         // 🔹 Bütün accept_person_detail id-ləri topla
         const allIds = [

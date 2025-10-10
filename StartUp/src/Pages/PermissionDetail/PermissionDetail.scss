@@ -1,3 +1,4 @@
+// src/Pages/PermissionDetail/PermissionDetail.scss
 @font-face {
   font-family: "Poppins-Bold";
   src: url("../../Font/Poppins-Bold.ttf");
@@ -142,11 +143,13 @@
         position: relative;
         border: 1px solid #b1b5c3;
         font-family: "Poppins-Regular";
+        
         p {
           margin: 20px 12px 0px 16px;
           color: #b1b5c3;
           font-size: 14px;
         }
+        
         .icon {
           height: 30px;
           width: 30px;
@@ -161,9 +164,11 @@
           color: #b1b5c3;
           transition: all 0.1s;
         }
+        
         .active {
           transform: rotate(180deg);
         }
+        
         .submenu1 {
           border: 1px solid #b1b5c3;
           border-radius: 0px 0px 10px 10px;
@@ -171,10 +176,12 @@
           top: 54px;
           height: 180px;
         }
+        
         .submenu {
           top: 72px;
           height: 54px;
         }
+        
         .submenu,
         .submenu1 {
           background: #fff;
@@ -190,6 +197,7 @@
             max-height: 180px;
             overflow-y: auto;
             width: 395px !important;
+            
             &::-webkit-scrollbar {
               width: 2px;
               background-color: #aaaaaa00;
@@ -200,25 +208,31 @@
               border-radius: 2px;
               cursor: pointer;
             }
+            
             li {
               padding: 8px 16px;
               font-size: 14px;
               font-family: "Poppins-Light";
               cursor: pointer;
               font-weight: 500;
+              
               &:hover {
                 background: #f0f0f0;
               }
             }
           }
+          
           .littleBox {
             position: relative;
+            
             input {
               border: 1px solid #b1b5c3;
+              
               &::placeholder {
                 font-family: "Poppins-Regular";
               }
             }
+            
             label {
               position: absolute;
             }
@@ -228,10 +242,12 @@
         .open {
           display: none;
         }
+        
         &::placeholder {
           font-size: 14px;
           font-family: "Poppins-Regular";
         }
+        
         input {
           width: 100%;
           height: 100%;
@@ -243,6 +259,7 @@
           outline: none;
           color: #848fa1;
         }
+        
         label {
           background: #fff;
           position: absolute;
@@ -252,6 +269,7 @@
           padding: 0px 4px;
           font-family: "Poppins-Regular";
         }
+        
         select {
           width: 100%;
           height: 100%;
@@ -273,6 +291,7 @@
             border-radius: 8px;
           }
         }
+        
         .sf-select {
           appearance: none;
           -webkit-appearance: none;
@@ -289,6 +308,7 @@
           background-size: 20px;
           cursor: pointer;
         }
+        
         textarea {
           width: 100%;
           height: 100%;
@@ -299,11 +319,82 @@
           font-family: "Poppins-Light";
           resize: none;
           border: none;
+          
           &::placeholder {
             font-family: "Poppins-Light" !important;
           }
         }
       }
+
+      // Editable box styles
+      .editableBox {
+        .editableContent {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          height: 100%;
+          padding: 0px 12px 0px 16px;
+
+          p {
+            margin: 0;
+            flex: 1;
+            color: #b1b5c3;
+            font-size: 14px;
+          }
+
+          .editInput {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: #000;
+            font-size: 14px;
+            font-family: "Poppins-Regular";
+            padding: 0;
+            margin: 0;
+          }
+
+          .editIcon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: #324462;
+            transition: all 0.2s;
+            margin-left: 8px;
+
+            &:hover {
+              color: #128c3c;
+            }
+
+            &.saveIcon {
+              color: #128c3c;
+
+              &:hover {
+                color: #0f6e2f;
+              }
+            }
+
+            &.cancelIcon {
+              color: #e2202e;
+
+              &:hover {
+                color: #b01a24;
+              }
+            }
+          }
+
+          .editActions {
+            display: flex;
+            gap: 4px;
+          }
+        }
+      }
+      
       .button {
         border-radius: 8px;
         height: 40px;
@@ -318,15 +409,18 @@
         border: 1px solid #128c3c;
         color: #128c3c;
         transition: all 0.3s;
+        
         &:hover {
           background: #128c3c;
           color: white;
         }
+        
         &:first-child {
           background: transparent;
           border: 1px solid #e2202e;
           color: #e2202e;
           transition: all 0.3s;
+          
           &:hover {
             background: #e2202e;
             color: white;
@@ -350,6 +444,7 @@
       justify-content: center;
       gap: 16px;
       color: #666666;
+      
       .middle {
         display: flex;
         padding: 12px 10px;
@@ -359,12 +454,14 @@
         border-radius: 6px;
         border: 1px solid #848fa1;
         width: 380px;
+        
         .icon {
           font-size: 50px;
           display: flex;
           color: #ef5350;
         }
       }
+      
       .normal {
         p {
           color: #000;
@@ -373,6 +470,7 @@
           font-weight: 600;
           line-height: 100%;
         }
+        
         .button {
           margin-top: 6px;
           display: flex;
@@ -388,6 +486,7 @@
           font-family: "Poppins-Light";
           text-decoration: none;
           cursor: pointer;
+          
           .ico {
             display: flex;
             font-size: 16px;
@@ -402,21 +501,25 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      
       .little {
         display: flex;
         justify-content: space-between;
         border-bottom: 1px solid #b1b5c3;
         padding: 12px 4px;
+        
         p {
           font-family: "Poppins-Regular";
           font-size: 16px;
         }
       }
+      
       .buttons {
         display: flex;
         gap: 10px;
         margin-top: 20px;
         justify-content: end;
+        
         .button {
           border-radius: 8px;
           height: 40px;
@@ -431,15 +534,18 @@
           border: 1px solid #128c3c;
           color: #128c3c;
           transition: all 0.3s;
+          
           &:hover {
             background: #128c3c;
             color: white;
           }
+          
           &:first-child {
             background: transparent;
             border: 1px solid #e2202e;
             color: #e2202e;
             transition: all 0.3s;
+            
             &:hover {
               background: #e2202e;
               color: white;
@@ -447,6 +553,7 @@
           }
         }
       }
+      
       .copy {
         display: flex;
         align-items: end;
@@ -456,6 +563,7 @@
         color: #000000;
         font-family: "Poppins-Regular";
         margin-top: 50px;
+        
         .linkk {
           align-items: center;
           text-decoration: none;
@@ -470,6 +578,7 @@
   .statusBox {
     position: relative;
     display: inline-block;
+    
     .status {
       padding: 8px 12px;
       font-size: 10px;
@@ -508,6 +617,7 @@
         border: 0.3px solid #ff9a00;
       }
     }
+    
     .statusDropdown {
       position: absolute;
       top: 100%;
@@ -589,6 +699,7 @@
 .onclick {
   background: rgba(105, 152, 230, 0.2) !important;
 }
+
 .onclickBox {
   background: #324462 !important;
   color: white !important;

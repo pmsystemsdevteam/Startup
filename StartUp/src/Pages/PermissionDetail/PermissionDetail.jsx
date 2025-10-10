@@ -1,3 +1,4 @@
+// src/Pages/PermissionDetail/PermissionDetail.jsx
 import dayjs from "dayjs";
 import "dayjs/locale/az";
 import { useEffect, useRef, useState } from "react";
@@ -5,24 +6,40 @@ import { AiOutlineExclamation } from "react-icons/ai";
 import { FaFileContract } from "react-icons/fa";
 import { IoCheckmark } from "react-icons/io5";
 import { LiaDownloadSolid } from "react-icons/lia";
-import { Link, useParams } from "react-router-dom";
+import { MdEdit, MdSave, MdClose } from "react-icons/md";
+import { Link, useParams, useLocation } from "react-router-dom";
 import "./PermissionDetail.scss";
 import axios from "axios";
 
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 function PermissionDetail({ multiple = true, onSelect }) {
   const { id } = useParams();
+  const location = useLocation();
   const [data, setData] = useState(null);
   dayjs.locale("az");
+  
+  // Check if current path is permission-info-detail
+  const isInfoDetailPage = location.pathname.includes("/hr/permission-info-detail/");
+  
   // popup state: null | "cancel" | "approve"
   const [popup, setPopup] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
 
+
+  // Edit mode state for document number
+  const [isEditingDocNumber, setIsEditingDocNumber] = useState(false);
+  const [editedDocNumber, setEditedDocNumber] = useState("");
+
+
   const [files, setFiles] = useState([]);
   const inputRef = useRef(null);
 
+
   const openPicker = () => inputRef.current?.click();
+
 
   const handleChange = (e) => {
     const picked = Array.from(e.target.files || []);
@@ -30,30 +47,37 @@ function PermissionDetail({ multiple = true, onSelect }) {
     onSelect?.(picked);
   };
 
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("access_token");
         if (!token) return;
 
+
         const res = await axios.get(`${API_BASE_URL}/api/hr/forms/${id}/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
+
         setData(res.data);
+        setEditedDocNumber(res.data.document_number || "");
       } catch (err) {
         console.error("Detail fetch error:", err);
       }
     };
 
+
     fetchData();
   }, [id]);
+
 
   // Backend call to approve/reject with optional reason
   const submitDecision = async (decision, reason = "") => {
     try {
       const token = localStorage.getItem("access_token");
       if (!token || !data) return;
+
 
       await axios.post(
         `${API_BASE_URL}/api/hr/forms/${data.id}/approve/`,
@@ -69,11 +93,13 @@ function PermissionDetail({ multiple = true, onSelect }) {
         }
       );
 
+
       alert(
         decision === "approved"
           ? "Form təsdiq edildi!"
           : "Form rədd edildi!"
       );
+
 
       setPopup(null);
       setRejectReason("");
@@ -82,6 +108,7 @@ function PermissionDetail({ multiple = true, onSelect }) {
         headers: { Authorization: `Bearer ${token}` },
       });
       setData(res.data);
+      setEditedDocNumber(res.data.document_number || "");
     } catch (error) {
       console.error("Submit decision error:", error.response || error);
       alert(
@@ -91,6 +118,49 @@ function PermissionDetail({ multiple = true, onSelect }) {
     }
   };
 
+
+  // Save edited document number
+  const handleSaveDocNumber = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token || !data) return;
+
+
+      await axios.patch(
+        `${API_BASE_URL}/api/hr/forms/${data.id}/`,
+        {
+          document_number: editedDocNumber,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+
+      // Update local data
+      setData({ ...data, document_number: editedDocNumber });
+      setIsEditingDocNumber(false);
+      alert("Sənəd nömrəsi uğurla yeniləndi!");
+    } catch (error) {
+      console.error("Update document number error:", error.response || error);
+      alert(
+        error.response?.data?.error ||
+          "Xəta baş verdi. Zəhmət olmasa yenidən cəhd edin."
+      );
+    }
+  };
+
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditedDocNumber(data.document_number || "");
+    setIsEditingDocNumber(false);
+  };
+
+
   if (!data) {
     return (
       <section id="permissionDetail">
@@ -98,6 +168,7 @@ function PermissionDetail({ multiple = true, onSelect }) {
       </section>
     );
   }
+
 
   return (
     <section id="permissionDetail">
@@ -108,7 +179,7 @@ function PermissionDetail({ multiple = true, onSelect }) {
       >
         {popup && (
           <div className="normalPop" onClick={(e) => e.stopPropagation()}>
-            {popup === "cancel" ? (
+            {popup === "cancel" && (
               <>
                 <div className="box6">
                   <label>Rədd səbəbi</label>
@@ -125,37 +196,47 @@ function PermissionDetail({ multiple = true, onSelect }) {
                   Göndər
                 </div>
               </>
-            ) : popup === "approve" ? (
-              <div className="button" onClick={() => submitDecision("approved")}>
-                <div
-                  className="icon"
-                  style={{
-                    color: "#128c3c",
-                    border: "1.5px solid #128c3c",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <IoCheckmark />
-                </div>
-                <p style={{ color: "#128c3c", textAlign: "center" }}>
-                  Müraciətlər təsdiqləyiciyə göndərildi
-                </p>
-                <div className="button" onClick={() => setPopup(null)} style={{marginTop: '12px'}}>
-                  Bağla
-                </div>
-              </div>
-            ) : null}
+            )}
           </div>
         )}
       </div>
 
+
       <div className="userInfo">
         <h2>İstifadəçi məlumatları:</h2>
         <form>
-          <div className="box">
+          <div className={`box ${isInfoDetailPage ? 'editableBox' : ''}`}>
             <label>Sənəd nömrəsi</label>
-            <p>{data.document_number || "-"}</p>
+            {isInfoDetailPage && isEditingDocNumber ? (
+              <div className="editableContent">
+                <input
+                  type="text"
+                  value={editedDocNumber}
+                  onChange={(e) => setEditedDocNumber(e.target.value)}
+                  className="editInput"
+                  autoFocus
+                />
+                <div className="editActions">
+                  <div className="editIcon saveIcon" onClick={handleSaveDocNumber}>
+                    <MdSave />
+                  </div>
+                  <div className="editIcon cancelIcon" onClick={handleCancelEdit}>
+                    <MdClose />
+                  </div>
+                </div>
+              </div>
+            ) : isInfoDetailPage ? (
+              <div className="editableContent">
+                <p>{data.document_number || "-"}</p>
+                <div className="editIcon" onClick={() => setIsEditingDocNumber(true)}>
+                  <MdEdit />
+                </div>
+              </div>
+            ) : (
+              <p>{data.document_number || "-"}</p>
+            )}
           </div>
+          
           <div className="box">
             <label>Ad soyad</label>
             <p>
@@ -176,6 +257,7 @@ function PermissionDetail({ multiple = true, onSelect }) {
           </div>
         </form>
       </div>
+
 
       <div className="documentSend">
         <h2>İcazə sənədi</h2>
@@ -205,6 +287,7 @@ function PermissionDetail({ multiple = true, onSelect }) {
           </div>
         </div>
       </div>
+
 
       <div className="summaryBox">
         <h2>Təsdiq edəcək şəxslər</h2>
@@ -287,7 +370,7 @@ function PermissionDetail({ multiple = true, onSelect }) {
             <div
               className="button"
               style={{ backgroundColor: "#128c3c", color: "#fff" }}
-              onClick={() => setPopup("approve")}
+              onClick={() => submitDecision("approved")}
             >
               Təsdiqlə
             </div>
@@ -309,5 +392,6 @@ function PermissionDetail({ multiple = true, onSelect }) {
     </section>
   );
 }
+
 
 export default PermissionDetail;
